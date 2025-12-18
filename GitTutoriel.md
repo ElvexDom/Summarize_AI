@@ -214,15 +214,25 @@ Pour vous assurer que votre dossier de travail reflète exactement le contenu de
 ```bash
 git checkout nom-de-branche       # changer de branche
 git reset --hard                  # réinitialise les fichiers suivis
-git clean -nfd                     # aperçu des fichiers ignorés et non suivis
-git clean -fd                      # exécution : supprime tous les fichiers non suivis/ignorés
+
+# Aperçu avant suppression :
+git clean -nfd                     # fichiers non suivis seulement
+git clean -nfdx                    # fichiers non suivis + fichiers ignorés
+
+# Suppression réelle :
+git clean -fd                      # supprime les fichiers non suivis seulement
+git clean -fdx                     # supprime les fichiers non suivis et ignorés
 ```
 
 - `reset --hard` : supprime toutes les modifications locales dans les fichiers suivis.
     
 - `clean -nfd` : simulation de la suppression des fichiers non suivis.
     
-- `clean -fd` : supprime réellement tous les fichiers non suivis/ignorés.
+- `clean -nfdx` : simulation de la suppression des fichiers non suivis et des fichiers ignorés.
+    
+- `clean -fd` : supprime réellement tous les fichiers non suivis.
+    
+- `clean -fdx` : supprime réellement tous les fichiers non suivis et les fichiers ignorés.
     
 
 > ⚠️ Attention : ces commandes peuvent supprimer définitivement vos modifications locales et fichiers non suivis. Assurez-vous de sauvegarder ce qui est important.
