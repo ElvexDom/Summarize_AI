@@ -1,88 +1,36 @@
-# 📄 Extraction de Documents & Résumé Intelligent (OCR + NLP + NER)
+# 📂 Documentation des Procédures
 
-## 🚀 Introduction
-
-Ce projet est une application d’IA permettant :
-
-- de **téléverser une image ou un scan de document** (JPG/PNG),
-    
-- d’**extraire le texte présent dans l’image (OCR)**,
-    
-- de **générer automatiquement un résumé** du texte,
-    
-- et d’**identifier des entités clés** comme les noms propres, lieux, dates…
-    
-
-Elle s’appuie sur les librairies :
-
-- **pytesseract** pour la reconnaissance de caractères,
-    
-- **Hugging Face Transformers** pour le résumé automatique & la NER,
-    
-- **Pillow** pour la manipulation des images,
-    
-- **PyTorch** pour l’inférence des modèles IA.
-    
+Bienvenue dans le centre de documentation. Ce dépôt regroupe toutes les procédures et guides de votre projet.
 
 ---
 
-## 🧠 Schéma Fonctionnel
+## 🗂 Structure des Procédures
 
-1️⃣ L’utilisateur envoie une image JPG/PNG  
-2️⃣ L’image est convertie en texte par OCR (Tesseract)  
-3️⃣ Le texte est :  
-   - résumé via un modèle de summarization  
-   - analysé via Named Entity Recognition  
-4️⃣ Le résultat est renvoyé à l’utilisateur  
-5️⃣ L’historique document/résumé peut être sauvegardé
-    
+| Nom du document             | Description                    | Lien                      |
+| --------------------------- | ------------------------------ | ------------------------- |
+| Exemple : `installation.md` | Guide pour installer le projet | [Voir](./installation.md) |
+
+> Pour ajouter une procédure, créez un fichier `.md` et ajoutez une ligne dans le tableau avec le nom, la description et le lien.
 
 ---
 
-# 📦 Installation du Projet
+## 📖 Comment utiliser cette documentation
 
-## 1️⃣ Cloner le projet
-
-```bash
-git clone https://github.com/ElvexDom/Summarize_AI.git
-cd Summarize_AI
-```
+1. Cliquez sur le nom du document dans la colonne Lien.
+2. Suivez les instructions pas à pas.
+3. Revenez à ce README pour accéder à d’autres procédures.
 
 ---
 
-## 2️⃣ Création d’un environnement virtuel
+## 🔧 Conseils pour les contributeurs
 
-### Windows
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-```
-
-### Mac / Linux
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
+* Nommez vos fichiers `.md` clairement.
+* Ajoutez une description concise dans le tableau.
+* Maintenez le README à jour.
 
 ---
 
-## 3️⃣ Installation des dépendances Python
+## ✨ Améliorations futures
 
-### Option A : via `requirements.txt`
-
-```bash
-pip install -r requirements.txt
-```
-
-### Option B : installer librairie par librairie
-
-```bash
-pip install pytesseract
-pip install Pillow
-pip install torch
-pip install transformers
-```
-
----
+* Ajouter des catégories pour les procédures.
+* Créer un index interactif pour filtrer les procédures.
