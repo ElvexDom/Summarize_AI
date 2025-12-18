@@ -6,9 +6,10 @@ Bienvenue dans le centre de documentation. Ce dépôt regroupe toutes les procé
 
 ## 🗂 Structure des Procédures
 
-| Nom du document             | Description                    | Lien                      |
-| --------------------------- | ------------------------------ | ------------------------- |
-| Exemple : `installation.md` | Guide pour installer le projet | [Voir](./installation.md) |
+| Nom du document               | Description                               | Lien                      |
+| ----------------------------- | ----------------------------------------- | ------------------------- |
+| `Installation.md`             | Guide pour installer le projet            | [Voir](Installation.md)   |
+| `GitTutoriel.md`              | Tutoriel pour utiliser Git efficacement  | [Voir](GitTutoriel.md)    |
 
 > Pour ajouter une procédure, créez un fichier `.md` et ajoutez une ligne dans le tableau avec le nom, la description et le lien.
 
