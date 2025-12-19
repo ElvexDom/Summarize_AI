@@ -1,4 +1,5 @@
 from utils.log_watcher import LogWatcher
+from app.test_gradio import *
 
 class Application:
     def __init__(self):
@@ -8,6 +9,7 @@ class Application:
         LogWatcher.log("info", "Démarrage de l'application.", screen=True)
 
         try:
+            demo.launch(share=True, debug=True)
             LogWatcher.log("info", "Pipeline OCR/NLP simulé.", screen=True)
 
         finally:
