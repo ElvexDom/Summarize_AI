@@ -3,10 +3,8 @@ import easyocr
 from transformers import pipeline
 import cv2
 import re
+from PIL import Image, ImageEnhance
 
-# =======================
-# MODELS (chargés 1 fois)
-# =======================
 
 # EasyOCR
 reader = easyocr.Reader(['fr', 'en'], gpu=False)
@@ -23,17 +21,21 @@ ner = pipeline(
 # =======================
 
 def preprocess_image(image_path, max_size=1200):
-    img = cv2.imread(image_path)
+    # Charger l'image
+    img = Image.open(image_path).convert("RGB")
 
-    h, w = img.shape[:2]
-    scale = max_size / max(h, w)
+    # Redimensionnement en gardant le ratio
+    w, h = img.size
+    scale = max_size / max(w, h)
     if scale < 1:
-        img = cv2.resize(img, (int(w * scale), int(h * scale)))
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Conversion en niveaux de gris
+    gray = img.convert("L")
 
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    contrast = clahe.apply(gray)
+    # Amélioration du contraste (approximation CLAHE)
+    enhancer = ImageEnhance.Contrast(gray)
+    contrast = enhancer.enhance(2.0)  # facteur ajustable
 
     return contrast
 
@@ -77,7 +79,7 @@ def run_ner(text):
     entities = ner(text)
 
     return "\n".join(
-        f"{e['word']} → {e['entity']}"
+        f"{e['word']} → {e['entity_group']}"
         for e in entities
     )
 
