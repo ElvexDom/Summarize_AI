@@ -1,6 +1,5 @@
 from utils.log_watcher import LogWatcher
 
-
 class Application:
     def __init__(self):
         pass
