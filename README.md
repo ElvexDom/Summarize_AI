@@ -81,12 +81,14 @@ pip install -r requirements.txt
 ### Option B : installer librairie par librairie
 
 ```bash
-pip install pytesseract
-pip install Pillow
+pip install paddlepaddle==3.2.2
+pip install paddleocr==3.3.2
+pip install uvicorn fastapi
 pip install torch
 pip install transformers
+pip install gradio
+pip install loguru
 ```
-
 ---
 
 # 📂 Structure du Projet
