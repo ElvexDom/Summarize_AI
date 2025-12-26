@@ -1,8 +1,6 @@
-import os
-from pathlib import Path
 from paddleocr import PaddleOCR
 import cv2
-import json
+import numpy as np
 
 ocr = PaddleOCR(
     lang="fr",                             # langue française
@@ -26,14 +24,24 @@ def preprocess_image(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
 
-def ocr_image_to_json(img_path):
-    img = cv2.imread(img_path)
-    if img is None:
-        return {"error": f"Impossible de charger l'image : {img_path}"}
+def bytes_to_cv2_image(image_bytes: bytes) -> np.ndarray:
+    np_arr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    return img
 
+def ocr_image_to_json(img_bytes: bytes):
+    """Transforme l'image en texte."""
+    
+    img = bytes_to_cv2_image(img_bytes) #bytes -> np.array
+    
+    if img is None:
+        return {"error": f"Impossible de charger l'image : {img}"}
+
+    #Transformation de l'image
     img = resize_image(img)
     img = preprocess_image(img)
 
+    #Résultat : texte de l'image sous format json
     results = ocr.predict(img)
 
     output = []
@@ -53,6 +61,6 @@ def ocr_image_to_json(img_path):
         "results": output
     }
 
-img_path = "image_test2.jpg"
-ocr_json = ocr_image_to_json(img_path)
-print(json.dumps(ocr_json, ensure_ascii=False, indent=2))
+# img_path = r"C:\Users\julie\OneDrive\Bureau\telechargement.jpg"
+# ocr_json = ocr_image_to_json(img_path)
+# print(json.dumps(ocr_json, ensure_ascii=False, indent=2))

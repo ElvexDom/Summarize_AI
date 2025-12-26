@@ -11,7 +11,8 @@ from fastapi import FastAPI, UploadFile, File  # Création d'API et gestion des 
 from fastapi.responses import FileResponse  # Pour renvoyer directement des fichiers (favicon, etc.)
 
 # Services personnalisés pour le NLP
-from services.nlp_service import run_summarization, run_ner  # Fonctions pour résumé et NER
+from services.nlp_service import nlp_serv  # Fonctions pour résumé et NER
+
 
 # Création de l'application FastAPI
 app = FastAPI(title="IA API", version="1.0")
@@ -63,13 +64,12 @@ async def process_document(file: UploadFile = File(...)):
     """
     content = await file.read()  # Lire le contenu du fichier de manière asynchrone
 
-    # TODO : remplacer par la vraie logique NLP
-    # summary = run_summarization(content)
-    summary = "mon résumé"
-
+    nlp = nlp_serv()
+    text = nlp.run_ocr(content)
+    print(text)
     return {
         "success": True,
-        "summary": summary
+        "text": text
     }
 
 
