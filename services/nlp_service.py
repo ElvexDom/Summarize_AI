@@ -2,10 +2,11 @@
 from transformers import pipeline
 import re
 from tests.paddleocr_script import ocr_image_to_json
+import json
 
 class nlp_serv:
     def __init__(self):
-        self.ner = pipeline("ner", model="xlm-roberta-large-finetuned-conll03-english", aggregation_strategy="simple")
+        self.ner = pipeline("ner", model="camembert-base", aggregation_strategy="simple")
 
 
     def run_summarization(self, text: str) -> str:
@@ -29,14 +30,20 @@ class nlp_serv:
         """
         if not text.strip():
             return ""
-
+        json_text = json.loads(text)
+        all_texts = []
+        for page in json_text['text']['results']:
+            for line in page['texts']:
+                all_texts.append(line['text'])
         text = self.clean_text(text)
-        entities = self.ner(text)
+        entities = self.ner(all_texts)
 
-        return "\n".join(
-            f"{e['word']} → {e.get('entity_group', e.get('entity'))}"
-            for e in entities
-        )
+        return entities
+
+        # return "\n".join(
+        #     f"{e['word']} → {e.get('entity_group', e.get('entity'))}"
+        #     for e in entities
+        # )
     
 
 

@@ -27,6 +27,13 @@ def fetch_api(image_path):
 
     return response.text
 
+def fetch_ner(ocr_text):
+    url_fastapi = "http://localhost:8002/ner_text"
+
+    response = requests.post(url_fastapi, json=ocr_text)
+
+    return response.text
+
 # =======================
 # IMAGE PREPROCESSING
 # =======================
@@ -129,7 +136,7 @@ with gr.Blocks() as demo:
     # )
 
     ner_button.click(
-        fn=nlp_services.run_ner,
+        fn=fetch_ner,
         inputs=ocr_text,
         outputs=entities_text
     )

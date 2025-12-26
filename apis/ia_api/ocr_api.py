@@ -20,6 +20,10 @@ app = FastAPI(title="IA API", version="1.0")
 # Timestamp de démarrage de l'application (UTC)
 start_time = datetime.now(timezone.utc)
 
+from pydantic import BaseModel
+
+class NerRequest(BaseModel):
+    ocr_text: dict
 
 @app.get("/", include_in_schema=False)
 async def root():
@@ -72,6 +76,17 @@ async def process_document(file: UploadFile = File(...)):
         "text": text
     }
 
+@app.post("/ner_text/")
+async def ner_text(request: NerRequest):
+
+    nlp = nlp_serv()
+
+    result = nlp.run_ner(request.ocr_text)
+
+    return {
+        "success": True,
+        "text": result
+    }
 
 if __name__ == "__main__":
     # Lancement du serveur pour le développement
