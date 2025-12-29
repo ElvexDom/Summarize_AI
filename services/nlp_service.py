@@ -6,7 +6,12 @@ import json
 
 class nlp_serv:
     def __init__(self):
-        self.ner = pipeline("ner", model="camembert-base", aggregation_strategy="simple")
+        self.ner = pipeline(
+            "ner",
+            model="Davlan/bert-base-multilingual-cased-ner-hrl",
+            aggregation_strategy="simple",
+            device=-1,  # FORCER CPU
+        )
 
 
     def run_summarization(self, text: str) -> str:
@@ -26,24 +31,25 @@ class nlp_serv:
     def run_ner(self, text: str) -> dict:
         """
         Fonction de reconnaissance d'entités nommées (NER).
-        Pour l'instant, retourne un dictionnaire vide.
+        Retourne un texte formaté "mot → label".
         """
         if not text.strip():
             return ""
-        json_text = json.loads(text)
-        all_texts = []
-        for page in json_text['text']['results']:
-            for line in page['texts']:
-                all_texts.append(line['text'])
+
+        # Nettoyage du texte
         text = self.clean_text(text)
-        entities = self.ner(all_texts)
 
-        return entities
+        # Extraction des entités
+        entities = self.ner(text)
 
-        # return "\n".join(
-        #     f"{e['word']} → {e.get('entity_group', e.get('entity'))}"
-        #     for e in entities
-        # )
+        # Formattage dans une variable intermédiaire
+        formatted_entities = [
+            f"{e['word']} → {e.get('entity_group', e.get('entity'))}" 
+            for e in entities
+        ]
+
+        # Retour sous forme de chaîne unique
+        return "\n".join(formatted_entities)
     
 
 

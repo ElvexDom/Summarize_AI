@@ -1,38 +1,54 @@
 import gradio as gr
-from transformers import pipeline
-import re
+# from transformers import pipeline
+# import re
 import requests
 from pathlib import Path
-from services.nlp_service import nlp_serv
-
-
+# from services.nlp_service import nlp_serv
 
 # RoBERTa / XLM-RoBERTa pour NER
-ner = pipeline(
-    "ner",
-    model="xlm-roberta-large-finetuned-conll03-english",
-    aggregation_strategy="simple"
-)
+# ner = pipeline(
+#     "ner",
+#     model="xlm-roberta-large-finetuned-conll03-english",
+#     aggregation_strategy="simple"
+# )
 
-def fetch_api(image_path):
-    url_fastapi = "http://localhost:8002/process_document"
+def fetch_ocr(image_path):
+    url_fastapi = "http://localhost:8002/process_document/"
 
+    # Lire le fichier image
     image_bytes = Path(image_path).read_bytes()
-
     files = {
         "file": ("image.jpg", image_bytes, "image/jpeg")
     }
 
+    # Appel de l'API OCR
     response = requests.post(url_fastapi, files=files)
+    data = response.json()
 
-    return response.text
+    if data.get("success"):
+        all_pages = []
+
+        for page in data['text']['results']:
+            page_texts = [line['text'] for line in page['texts']]  # liste des lignes
+            all_pages.append("\n".join(page_texts))  # texte continu par page
+
+        full_text = "\n".join(all_pages)
+
+        return full_text
+
 
 def fetch_ner(ocr_text):
-    url_fastapi = "http://localhost:8002/ner_text"
+    url_fastapi = "http://localhost:8002/ner_text/"
 
-    response = requests.post(url_fastapi, json=ocr_text)
+    payload = {
+        "ocr_text": ocr_text
+    }
 
-    return response.text
+    response = requests.post(url_fastapi, json=payload)
+    data = response.json()
+
+    if data.get("success"):
+        return data["text"]
 
 # =======================
 # IMAGE PREPROCESSING
@@ -62,9 +78,9 @@ def fetch_ner(ocr_text):
 # TEXT CLEANING
 # =======================
 
-def clean_text(text):
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
+# def clean_text(text):
+#     text = re.sub(r"\s+", " ", text)
+#     return text.strip()
 
 # =======================
 # STEP 1 — OCR
@@ -124,11 +140,9 @@ with gr.Blocks() as demo:
 
     ner_button = gr.Button("🔍 Détecter les entités (NER)")
 
-    #api_button = gr.Button("Envoyer a l api")
+    # nlp_services = nlp_serv()
 
-
-    nlp_services = nlp_serv()
-    # # Actions
+    # Actions
     # ocr_button.click(
     #     fn=nlp_services.run_ocr,
     #     inputs=image,
@@ -142,7 +156,7 @@ with gr.Blocks() as demo:
     )
 
     ocr_button.click(
-        fn=fetch_api,
+        fn=fetch_ocr,
         inputs=image,
         outputs=ocr_text
     )
