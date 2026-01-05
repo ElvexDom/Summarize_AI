@@ -15,9 +15,10 @@ class nlp_serv:
 
         self.summarization = pipeline(
             "summarization",
-            model="google-t5/t5-base",
+            model="plguillou/t5-base-fr-sum-cnndm",
             device=-1,  # FORCER CPU
         )
+        
 
     def run_summarization(self, text: str) -> str:
         """
