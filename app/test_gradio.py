@@ -37,11 +37,11 @@ def fetch_ocr(image_path):
         return full_text
 
 
-def fetch_ner(ocr_text):
+def fetch_ner(text):
     url_fastapi = "http://localhost:8002/ner_text/"
 
     payload = {
-        "ocr_text": ocr_text
+        "text": text
     }
 
     response = requests.post(url_fastapi, json=payload)
@@ -49,6 +49,19 @@ def fetch_ner(ocr_text):
 
     if data.get("success"):
         return data["text"]
+
+def fetch_resume(text):
+    url_fastapi = "http://localhost:8002/resume_text/"
+
+    payload = {
+        "text": text
+    }
+
+    response = requests.post(url_fastapi, json=payload)
+    data = response.json()
+
+    if data.get("success"):
+        return data["text"].get("summary_text")
 
 # =======================
 # IMAGE PREPROCESSING
@@ -136,6 +149,11 @@ with gr.Blocks() as demo:
     ocr_button = gr.Button("📄 Extraire le texte (OCR)")
 
     with gr.Row():
+        resume_text = gr.Textbox(label="Résumé (modifiable)", lines=5)
+    
+    resume_button = gr.Button("📄 Résume le texte (NLP)")
+    
+    with gr.Row():
         entities_text = gr.Textbox(label="Entités détectées (RoBERTa)", lines=15)
 
     ner_button = gr.Button("🔍 Détecter les entités (NER)")
@@ -153,6 +171,11 @@ with gr.Blocks() as demo:
         fn=fetch_ner,
         inputs=ocr_text,
         outputs=entities_text
+    )
+    resume_button.click(
+        fn=fetch_resume,
+        inputs=ocr_text,
+        outputs=resume_text
     )
 
     ocr_button.click(

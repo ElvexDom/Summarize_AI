@@ -13,12 +13,25 @@ class nlp_serv:
             device=-1,  # FORCER CPU
         )
 
+        self.summarization = pipeline(
+            "summarization",
+            model="google-t5/t5-base",
+            device=-1,  # FORCER CPU
+        )
 
     def run_summarization(self, text: str) -> str:
         """
         Fonction de résumé automatique.
         Pour l'instant, retourne une chaîne vide ou le texte inchangé.
         """
+        if not text.strip():
+            return ""
+        
+        summary = self.summarization(text)
+        
+        
+        
+        print(summary)
         # TODO : implémenter le résumé avec HuggingFace
         return ""
 
