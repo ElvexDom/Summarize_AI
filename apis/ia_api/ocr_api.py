@@ -39,13 +39,13 @@ app = FastAPI(title="IA API", version="1.0")
 start_time = datetime.now(timezone.utc)
 
 
-class NerRequest(BaseModel):
+class TextRequest(BaseModel):
     """
     Schéma Pydantic pour les requêtes NER.
     Attributs :
     - ocr_text : Texte issu de l'OCR à analyser pour extraire les entités nommées.
     """
-    ocr_text: str
+    text: str
 
 
 @app.get("/", include_in_schema=False)
@@ -112,7 +112,7 @@ async def process_document(file: UploadFile = File(...)):
 
 
 @app.post("/ner_text/")
-async def ner_text(request: NerRequest):
+async def ner_text(request: TextRequest):
     """
     Endpoint pour extraire les entités nommées d'un texte.
 
@@ -124,7 +124,28 @@ async def ner_text(request: NerRequest):
     - text : Résultat de l'analyse NER
     """
     # Analyse NER
-    text = nlp.run_ner(request.ocr_text)
+    text = nlp.run_ner(request.text)
+
+    return {
+        "success": True,
+        "text": text
+    }
+    
+    
+@app.post("/resume_text/")
+async def resume_text(request: TextRequest):
+    """
+    Endpoint pour résumer le  texte extrait.
+
+    Paramètres :
+    - request : Objet TextRequest contenant le texte OCR
+
+    Retourne :
+    - success : Indicateur de succès
+    - text : Résultat du résumé du texte
+    """
+    # Resumé du texte
+    text = nlp.run_summarization(request.text)
 
     return {
         "success": True,
