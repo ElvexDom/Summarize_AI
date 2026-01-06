@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import List, Union
 
 
+
+
 DataStorage = Union[pd.DataFrame, List[dict]]
 # --- 1. Configuration des Chemins ---
 # Chemin relatif de la BDD (comme spécifié par l'utilisateur)
@@ -116,52 +118,53 @@ def write_user_db(data):
     finally:
         db.close()
 
-def write_resume_db(data):
+def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
     """
-    Écrit des utilisateurs en base de données.
-    Accepte une entrée de type pd.DataFrame ou List[dict].
-    Les clés attendues sont : 'pseudo' et 'password'.
+    Enregistre un ou plusieurs résumés pour un utilisateur et met à jour la table Summary.
+    `user_id` : ID de l'utilisateur propriétaire du résumé.
+    `data` : pd.DataFrame ou List[dict] avec les clés 'name' et 'text'.
     """
-    users_to_insert = []
+    resume_to_insert = []
 
-    # --- SWITCH LOGIC: Conversion vers List[dict] ---
+    # --- Conversion vers List[dict] ---
     if isinstance(data, pd.DataFrame):
         logger.info("Conversion de l'entrée : DataFrame -> List[dict].")
-        users_to_insert = data.reset_index().to_dict('records')
+        resume_to_insert = data.reset_index().to_dict('records')
 
     elif isinstance(data, list):
         logger.info("Entrée traitée comme List[dict].")
-        users_to_insert = data
+        resume_to_insert = data
 
     else:
-        logger.error(f"Type de donnée non supporté pour write_db : {type(data)}")
-        raise TypeError("write_db n'accepte que pd.DataFrame ou List[dict].")
+        logger.error(f"Type de donnée non supporté pour write_resume_db : {type(data)}")
+        raise TypeError("write_resume_db n'accepte que pd.DataFrame ou List[dict].")
 
-    # --- Insertion SQLAlchemy ---
     db = get_db_session()
     try:
-        for user_data in users_to_insert:
-            pseudo = user_data.get('pseudo', '').strip()
-            password = user_data.get('password', '').strip()
+        for resume_data in resume_to_insert:
+            name = resume_data.get('name', '').strip()
+            text = resume_data.get('text', '').strip()
 
             # Nettoyage des champs
-            if not pseudo:
-                pseudo = "NULL_TEXT_EMPTY"
-                logger.warning("Pseudo vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
+            if not name:
+                name = "NULL_TEXT_EMPTY"
+                logger.warning("Nom de fichier vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
+            if not text:
+                text = "NULL_TEXT_EMPTY"
+                logger.warning("Texte du résumé vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
 
-            if not password:
-                password = "NULL_TEXT_EMPTY"
-                logger.warning("Mot de passe vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
+            # 1️⃣ Création du résumé
+            new_resume = Resume(resume_name=name, resume=text)
+            db.add(new_resume)
+            db.flush()  # récupère l'id du résumé avant commit
 
-            new_user = Users(
-                pseudo=pseudo,
-                password=password
-            )
+            # 2️⃣ Création de la liaison Summary
+            new_summary = Summary(ID_user=user_id, ID_resume=new_resume.id)
+            db.add(new_summary)
 
-            db.add(new_user)
-
+        # 3️⃣ Commit final
         db.commit()
-        logger.success(f"Écriture de {len(users_to_insert)} utilisateur(s) dans la BDD réussie.")
+        logger.success(f"Insertion de {len(resume_to_insert)} résumé(s) et mise à jour de Summary réussie.")
 
     except SQLAlchemyError as e:
         db.rollback()
@@ -169,6 +172,7 @@ def write_resume_db(data):
 
     finally:
         db.close()
+
 
 
 def read_db() -> pd.DataFrame:
