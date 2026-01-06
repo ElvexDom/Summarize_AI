@@ -3,24 +3,39 @@ from transformers import pipeline
 import re
 from tests.paddleocr_script import ocr_image_to_json
 import json
+from groq import Groq
+from dotenv import load_dotenv
+import os
+import torch
+
 
 class nlp_serv:
     def __init__(self):
+        
+        device = 0 if torch.cuda.is_available() else -1
         self.ner = pipeline(
             "ner",
             model="Davlan/bert-base-multilingual-cased-ner-hrl",
             aggregation_strategy="simple",
-            device=-1,  # FORCER CPU
+            device=device,  # FORCER CPU
         )
+        
+        
+        load_dotenv()
 
-        self.summarization = pipeline(
-            "summarization",
-            model="plguillou/t5-base-fr-sum-cnndm",
-            device=-1,  # FORCER CPU
+        # Charge la clé API GROQ depuis les variables d'environnement. 
+        try:
+            GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+        except:
+            print("La clé API GROQ n'a pas été trouvée dans les variables d'environnement.")
+            exit()
+            
+        self.groq_client = Groq(
+            api_key=GROQ_API_KEY
         )
         
 
-    def run_summarization(self, text: str) -> str:
+    def run_summarization(self, text: str) -> str | None:
         """
         Fonction de résumé automatique.
         Pour l'instant, retourne une chaîne vide ou le texte inchangé.
@@ -28,13 +43,41 @@ class nlp_serv:
         if not text.strip():
             return ""
         
-        summary = self.summarization(text)
+        system_prompt = {
+            "role" : "system",
+            "content" : """
+                            Tu est un expert en analyse de documents et en synthèse d'informations
+                            avec une grande capacité à distinguer les éléments essentiels et non essentiels d'un document.
+
+                            Tu vas analyser un texte qui a été extrait par un modèle OCR d'un document et en faire une synthèse.
+                            
+                            tu vas renvoyer uniquement le résumé du document fourni, rien d'autre
+
+                        """
+                        
+        }
+        
+        user_message = {
+            "role" : "user",
+            "content" : text
+        }
+        
+
+        summary_completion = self.groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                system_prompt,
+                user_message
+            ],
+            temperature=0.2
+        )
         
         
         
+        summary = summary_completion.choices[0].message.content
         print(summary)
-        # TODO : implémenter le résumé avec HuggingFace
-        return ""
+        
+        return summary
 
     
     def clean_text(self, text):

@@ -145,11 +145,11 @@ async def resume_text(request: TextRequest):
     - text : Résultat du résumé du texte
     """
     # Resumé du texte
-    text = nlp.summarization(request.text)
+    text = nlp.run_summarization(request.text)
 
     return {
         "success": True,
-        "text": text[0]
+        "text": text
     }
 
 

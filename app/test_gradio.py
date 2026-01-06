@@ -61,7 +61,7 @@ def fetch_resume(text):
     data = response.json()
 
     if data.get("success"):
-        return data["text"].get("summary_text")
+        return data["text"]
 
 # =======================
 # IMAGE PREPROCESSING
