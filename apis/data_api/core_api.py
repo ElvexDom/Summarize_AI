@@ -1,12 +1,14 @@
 #backend/BD_api.py
 import uvicorn
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db
+from utils.encode import Encode
+encoder = Encode()
 
 #Modèle pydantic
 class UserRequest(BaseModel): 
@@ -39,9 +41,11 @@ def read_root():
 
 @app.post("/add_user/")
 def add_user(user : UserRequest):
-    """Ajouter un nouvel utilisateur.   DANS LE WRITE METTRE LE CRYPTAGE DU MOT DE PASSE"""
+    """Ajouter un nouvel utilisateur. """
+
+    encode_password = encoder.chiffrer_message(user.password)
     user_data = {"pseudo": user.pseudo,
-            "password": user.password}
+            "password": encode_password}
     
     write_user_db([user_data])
     
@@ -51,17 +55,13 @@ def add_user(user : UserRequest):
     return "Utilisateur ajouté."
 
 @app.post("/add_resume/")
-def add_resume(resume : ResumeRequest):
-    """Ajouter un nouvel utilisateur.   DANS LE WRITE METTRE LE CRYPTAGE DU MOT DE PASSE"""
-    resume_data = {"name": resume.name,
-            "text": resume.text}
-    
-    write_db([resume_data])
-    
-    # #Lecture pour récup l'id (optionnel -> juste pour l'affichage)
-    # df = read_db()
-    # last_user = df[df.pseudo == user.pseudo]
-    return "Utilisateur ajouté."
+def add_resume(user_id: int, resume_name: str, resume_text: str):
+    write_resume_db(
+        user_id=user_id,
+        data=[{"name": resume_name, "text": resume_text}]
+    )
+    return {"message": "Résumé ajouté et Summary mis à jour"}
+
 
 if __name__ == "__main__":
     # Lancement du serveur pour le développement
