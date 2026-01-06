@@ -61,6 +61,4 @@ def ocr_image_to_json(img_bytes: bytes):
         "results": output
     }
 
-# img_path = r"C:\Users\julie\OneDrive\Bureau\telechargement.jpg"
-# ocr_json = ocr_image_to_json(img_path)
-# print(json.dumps(ocr_json, ensure_ascii=False, indent=2))
+
