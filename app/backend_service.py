@@ -38,6 +38,6 @@ class BackendService:
         )
 
         if data.get("success"):
-            return data["text"].get("summary_text")
+            return data["text"]
 
         return ""

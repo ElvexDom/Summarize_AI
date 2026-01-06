@@ -40,9 +40,9 @@ def fetch_ocr(image_path):
 def fetch_ner(text):
     url_fastapi = "http://localhost:8002/ner_text/"
 
-    payload = {
+    payload = { 
         "text": text
-    }
+    } 
 
     response = requests.post(url_fastapi, json=payload)
     data = response.json()

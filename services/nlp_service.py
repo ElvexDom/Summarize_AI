@@ -75,7 +75,7 @@ class nlp_serv:
         
         
         summary = summary_completion.choices[0].message.content
-        print(summary)
+        # print(summary)
         
         return summary
 
