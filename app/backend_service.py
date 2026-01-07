@@ -52,3 +52,14 @@ class BackendService:
             return True
 
         return False
+
+    def fetch_login_user(self, username, mdp) -> bool:
+        data = self.api.post_json(
+            "login/",
+            {"pseudo":username, "password":mdp}
+        )
+
+        if data.get("success"):
+            return True
+
+        return False

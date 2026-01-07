@@ -75,7 +75,9 @@ def get_resume_by_id(user_id: int) :
     except Exception as e:
         return {"error": str(e)}
 
-
+@app.post("/login/")
+def login(user : UserRequest):
+    return {"succes": True, "message": "vous etes bien connecté"}
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import gradio as gr
 from app.ui.inscription_ui import create_inscription_ui
 from app.ui.nlp_pipeline_ui import create_nlp_pipeline_ui
 from app.ui.resume_ui import create_resume_ui
+from app.ui.login_ui import create_login_ui
 from assets.toaster import show_toast
 
 # ===============================================
@@ -13,10 +14,10 @@ utilisateurs = {"test": {"mdp": "1234", "mail": "test@example.com"}}
 # ===============================================
 # AUTHENTIFICATION
 # ===============================================
-def verifier_connexion(pseudo, mdp):
-    if pseudo in utilisateurs and utilisateurs[pseudo]["mdp"] == mdp:
-        return True, f"✅ **{pseudo}** connecté"
-    return False, "❌ Identifiants faux"
+# def verifier_connexion(pseudo, mdp):
+#     if pseudo in utilisateurs and utilisateurs[pseudo]["mdp"] == mdp:
+#         return True, f"✅ **{pseudo}** connecté"
+#     return False, "❌ Identifiants faux"
 
 def creer_compte(pseudo, mail, mdp, mdp_confirm):
     if pseudo in utilisateurs: 
@@ -46,13 +47,13 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     with gr.Column(visible=True) as section_non_connecte:
         gr.Markdown("### 🔐 **Connexion requise**")
         gr.Markdown("**Test**: `test` / `1234`")
+        create_login_ui()
+        # with gr.Row():
+        #     pseudo_input = gr.Textbox(label="👤 Pseudo", scale=2)
+        #     mdp_input = gr.Textbox(label="🔒 Mot de passe", type="password", scale=2)
         
         with gr.Row():
-            pseudo_input = gr.Textbox(label="👤 Pseudo", scale=2)
-            mdp_input = gr.Textbox(label="🔒 Mot de passe", type="password", scale=2)
-        
-        with gr.Row():
-            btn_login = gr.Button("🚀 Me connecter", variant="primary", scale=1)
+            # btn_login = gr.Button("🚀 Me connecter", variant="primary", scale=1)
             btn_inscription = gr.Button("➕ M'inscrire", variant="secondary", scale=1)
         
         status_login = gr.Markdown()
@@ -68,7 +69,7 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     with gr.Column(visible=False) as section_connecte:
         gr.Markdown("### 👤 **Utilisateur connecté**")
         user_status = gr.Markdown()
-        show_toast("texte")
+        # show_toast("texte")
         btn_logout = gr.Button("🚪 Déconnexion", variant="stop")
         
         # Onglets
@@ -83,31 +84,31 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     # ===============================================
     # ÉVÉNEMENTS - CONNEXION
     # ===============================================
-    def gerer_login(pseudo_i, mdp_i):
-        ok, msg = verifier_connexion(pseudo_i, mdp_i)
-        if ok:
-            return (
-                gr.update(visible=False),      # Cache section_non_connecte
-                gr.update(visible=False),      # Cache modale_inscription
-                gr.update(visible=True),       # Affiche section_connecte
-                f"**{pseudo_i}** connecté 👋",  # user_status
-                pseudo_i,                      # pseudo_user
-                msg                            # status_login
-            )
-        return (
-            gr.update(visible=True),        # Garde section_non_connecte
-            gr.update(visible=False),       # Cache modale_inscription
-            gr.update(visible=False),       # Cache section_connecte
-            "",                             # Reset user_status
-            "",                             # Reset pseudo_user
-            msg                             # Erreur status_login
-        )
+    # def gerer_login(pseudo_i, mdp_i):
+    #     ok, msg = verifier_connexion(pseudo_i, mdp_i)
+    #     if ok:
+    #         return (
+    #             gr.update(visible=False),      # Cache section_non_connecte
+    #             gr.update(visible=False),      # Cache modale_inscription
+    #             gr.update(visible=True),       # Affiche section_connecte
+    #             f"**{pseudo_i}** connecté 👋",  # user_status
+    #             pseudo_i,                      # pseudo_user
+    #             msg                            # status_login
+    #         )
+    #     return (
+    #         gr.update(visible=True),        # Garde section_non_connecte
+    #         gr.update(visible=False),       # Cache modale_inscription
+    #         gr.update(visible=False),       # Cache section_connecte
+    #         "",                             # Reset user_status
+    #         "",                             # Reset pseudo_user
+    #         msg                             # Erreur status_login
+    #     )
 
-    btn_login.click(
-        gerer_login,
-        inputs=[pseudo_input, mdp_input],
-        outputs=[section_non_connecte, inscription_ui, section_connecte, user_status, pseudo_user, status_login]
-    )
+    # btn_login.click(
+    #     gerer_login,
+    #     inputs=[pseudo_input, mdp_input],
+    #     outputs=[section_non_connecte, inscription_ui, section_connecte, user_status, pseudo_user, status_login]
+    # )
 
     # ===============================================
     # ÉVÉNEMENTS - INSCRIPTION
