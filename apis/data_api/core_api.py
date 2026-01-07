@@ -65,7 +65,7 @@ def add_resume(resume : ResumeRequest):
     )
     return {"succes": True, "message": "Résumé ajouté et Summary mis à jour"}
 
-@app.get("/get_resume_by_id/{user_id}")
+@app.get("/get_resume/user/{user_id}")
 def get_resume_by_id(user_id: int) :
     try:
         
