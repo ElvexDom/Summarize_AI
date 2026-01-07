@@ -174,8 +174,49 @@ def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
     finally:
         db.close()
 
-
-
+def delete_use_db(user_id: int) -> bool:
+    """
+    Supprime un utilisateur et tous ses résumés associés.
+    Retourne True si la suppression a réussi, False sinon.
+    """
+    db = get_db_session()
+    try:
+        # Etape 1 : Vérifier que l'utilisateur existe
+        user = db.query(Users).filter(Users.id == user_id).first()
+        if not user:
+            logger.warning(f"Utilisateur avec ID {user_id} introuvable.")
+            return False
+        
+        # Etape 2 : Récupérer tous les ID des résumés associés via Summary
+        summaries = db.query(Summary).filter(Summary.ID_user == user_id).all()
+        resume_ids = [s.ID_resume for s in summaries]
+        
+        # Etape 3 : Supprimer les entrées dans Summary
+        db.query(Summary).filter(Summary.ID_user == user_id).delete()
+        logger.info(f"Suppression de {len(summaries)} entrée(s) dans Summary.")
+        
+        # Etape 4 : Supprimer les résumés associés
+        if resume_ids:
+            deleted_resumes = db.query(Resume).filter(Resume.id.in_(resume_ids)).delete(synchronize_session=False)
+            logger.info(f"Suppression de {deleted_resumes} résumé(s).")
+        
+        # Etape 5 : Supprimer l'utilisateur
+        db.delete(user)
+        logger.success(f"Utilisateur {user.pseudo} (ID: {user_id}) supprimé avec succès.")
+        
+        # Etape 6 : Commit final
+        db.commit()
+        return True
+        
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Erreur lors de la suppression de l'utilisateur {user_id} : {e}")
+        return False
+        
+    finally:
+        db.close()
+        
+        
 def read_db() -> pd.DataFrame:
     """
     Lit tous les utilisateurs depuis la BDD et les renvoie sous forme de DataFrame.
