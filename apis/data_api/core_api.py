@@ -65,6 +65,16 @@ def add_resume(resume : ResumeRequest):
     )
     return {"succes": True, "message": "Résumé ajouté et Summary mis à jour"}
 
+@app.delete("/delete_user/{user_id}")
+def delete_user(user_id: int):
+    if delete_user(user_id):
+    
+        return {"succes": True, "message": "L'utilisateur a été supprimé avec succès"}
+    else:
+        return {"succes": False, "message": "L'utilisateur n'a pas pu être supprimé"}
+
+
+
 @app.get("/get_resume/user/{user_id}")
 def get_resume_by_id(user_id: int) :
     try:
