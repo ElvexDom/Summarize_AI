@@ -212,6 +212,41 @@ def read_db() -> pd.DataFrame:
 
     finally:
         db.close()
+        
+        
+def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
+    """
+    Lit tous les résumés d'un utilisateur depuis la BDD et les renvoie sous forme de DataFrame.
+    Gère le cas de BDD vide en retournant un DataFrame vide avec les colonnes attendues.
+    """
+    db = get_db_session()
+    try:
+        # all_users = db.query(Users).all()
+        all_resumes = db.query(Resume).join(Summary).filter(Summary.ID_user == user_id).all()
+
+
+        data = []
+        for resume in all_resumes:
+            data.append({
+                'id': resume.id,
+                'name': resume.resume_name,
+                'text': resume.resume
+            })
+
+            
+
+        # Cas BDD vide
+        if not data:
+            return pd.DataFrame(columns=['id', 'name', 'text']).set_index('id')
+        
+        return pd.DataFrame(data).set_index('id')
+
+    except SQLAlchemyError as e:
+        logger.error(f"Erreur de lecture : {e}")
+        return pd.DataFrame(columns=['id', 'name', 'text']).set_index('id')
+
+    finally:
+        db.close()
 
 
 def initialize_db():

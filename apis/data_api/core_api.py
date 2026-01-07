@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id
 from utils.encode import Encode
 encoder = Encode()
 
@@ -64,6 +64,18 @@ def add_resume(resume : ResumeRequest):
         data=[{"name": resume.name, "text": resume.text}]
     )
     return {"succes": True, "message": "Résumé ajouté et Summary mis à jour"}
+
+@app.get("/get_resume_by_id/{user_id}")
+def get_resume_by_id(user_id: int) :
+    try:
+        
+        df = read_resume_by_user_id(user_id)
+    
+        return df
+    except Exception as e:
+        return {"error": str(e)}
+
+
 
 
 if __name__ == "__main__":
