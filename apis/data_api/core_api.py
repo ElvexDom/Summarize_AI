@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_use_db
 from utils.encode import Encode
 encoder = Encode()
 
@@ -67,7 +67,7 @@ def add_resume(resume : ResumeRequest):
 
 @app.delete("/delete_user/{user_id}")
 def delete_user(user_id: int):
-    if delete_user(user_id):
+    if delete_use_db(user_id):
     
         return {"succes": True, "message": "L'utilisateur a été supprimé avec succès"}
     else:

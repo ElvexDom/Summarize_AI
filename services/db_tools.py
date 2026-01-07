@@ -174,7 +174,7 @@ def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
     finally:
         db.close()
 
-def delete_user(user_id: int) -> bool:
+def delete_use_db(user_id: int) -> bool:
     """
     Supprime un utilisateur et tous ses résumés associés.
     Retourne True si la suppression a réussi, False sinon.
