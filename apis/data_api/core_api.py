@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id
 from utils.encode import Encode
 encoder = Encode()
 
@@ -16,6 +16,7 @@ class UserRequest(BaseModel):
     password : str
 
 class ResumeRequest(BaseModel): 
+    user_id: int
     name : str  
     text : str
 
@@ -52,15 +53,29 @@ def add_user(user : UserRequest):
     # #Lecture pour récup l'id (optionnel -> juste pour l'affichage)
     # df = read_db()
     # last_user = df[df.pseudo == user.pseudo]
-    return "Utilisateur ajouté."
+    return {"succes": True, "message": "Utilisateur ajouté"}
+
+
 
 @app.post("/add_resume/")
-def add_resume(user_id: int, resume_name: str, resume_text: str):
+def add_resume(resume : ResumeRequest):
     write_resume_db(
-        user_id=user_id,
-        data=[{"name": resume_name, "text": resume_text}]
+        user_id=resume.user_id,
+        data=[{"name": resume.name, "text": resume.text}]
     )
-    return {"success" : True, "message": "Résumé ajouté et Summary mis à jour"}
+    return {"succes": True, "message": "Résumé ajouté et Summary mis à jour"}
+
+@app.get("/get_resume/user/{user_id}")
+def get_resume_by_id(user_id: int) :
+    try:
+        
+        df = read_resume_by_user_id(user_id)
+    
+        return df
+    except Exception as e:
+        return {"error": str(e)}
+
+
 
 
 if __name__ == "__main__":
