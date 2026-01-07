@@ -68,6 +68,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "apis.data_api.core_api:app",  # Chemin vers le module de l'application
         host="127.0.0.1",
-        port=8002,
+        port=8001,
         reload=True  # Recharge automatique pour le dev, à désactiver en prod
     )

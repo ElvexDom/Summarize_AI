@@ -20,7 +20,8 @@ DB_FILE_PATH_RELATIVE = os.path.join("data", "DB.db")
 
 # Détermination du répertoire racine du projet pour obtenir un chemin absolu fiable
 CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parent.parent # Remonte de modules -> backend -> racine
+PROJECT_ROOT = CURRENT_DIR.parent # Remonte de modules -> backend -> racine
+
 
 # Chemin Absolu vers la BDD
 DB_FILE_PATH = PROJECT_ROOT / DB_FILE_PATH_RELATIVE
