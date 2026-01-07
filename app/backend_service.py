@@ -42,10 +42,10 @@ class BackendService:
 
         return ""
 
-    def fetch_add_user(self) -> bool:
+    def fetch_add_user(self, username, mdp) -> bool:
         data = self.api.post_json(
             "add_user/",
-            {"pseudo":"test", "password":"1234"}
+            {"pseudo":username, "password":mdp}
         )
 
         if data.get("success"):

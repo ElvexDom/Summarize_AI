@@ -60,7 +60,7 @@ def add_resume(user_id: int, resume_name: str, resume_text: str):
         user_id=user_id,
         data=[{"name": resume_name, "text": resume_text}]
     )
-    return {"message": "Résumé ajouté et Summary mis à jour"}
+    return {"success" : True, "message": "Résumé ajouté et Summary mis à jour"}
 
 
 if __name__ == "__main__":

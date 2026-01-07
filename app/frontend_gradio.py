@@ -2,13 +2,8 @@
 import gradio as gr
 from app.ui.inscription_ui import create_inscription_ui
 from app.ui.nlp_pipeline_ui import create_nlp_pipeline_ui
-from app.api_client import FastAPIClient
-from app.backend_service import BackendService
-
-# =======================
-# Client + BackendService
-user_api_client = FastAPIClient("http://localhost:8001")
-backend_service = BackendService(user_api_client)
+from app.ui.resume_ui import create_resume_ui
+from assets.toaster import show_toast
 
 # ===============================================
 # DONNÉES USERS
@@ -43,6 +38,8 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     etat_connecte = gr.State(False)
     pseudo_user = gr.State("")
 
+    toast_output = gr.HTML()
+
     # ===============================================
     # SECTION NON CONNECTÉE
     # ===============================================
@@ -57,14 +54,13 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
         with gr.Row():
             btn_login = gr.Button("🚀 Me connecter", variant="primary", scale=1)
             btn_inscription = gr.Button("➕ M'inscrire", variant="secondary", scale=1)
-            btn_test = gr.Button("TEST", variant="secondary", scale=1)
         
         status_login = gr.Markdown()
 
     # ===============================================
     # MODALE INSCRIPTION (importée depuis inscription_ui.py)
     # ===============================================
-    inscription_ui, p_reg, m_reg, mdp_reg, mdp_c_reg, btn_create, btn_close, msg_create = create_inscription_ui()
+    inscription_ui, btn_close = create_inscription_ui()
 
     # ===============================================
     # SECTION CONNECTÉE
@@ -72,12 +68,13 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     with gr.Column(visible=False) as section_connecte:
         gr.Markdown("### 👤 **Utilisateur connecté**")
         user_status = gr.Markdown()
+        show_toast("texte")
         btn_logout = gr.Button("🚪 Déconnexion", variant="stop")
         
         # Onglets
         with gr.Tabs() as onglets:
             with gr.TabItem("🔍 Rechercher"):
-                gr.Markdown("**Fonctionnalité à implémenter**")
+                create_resume_ui()
             
             with gr.TabItem("📄 Générer"):
                 # Affiche le pipeline NLP complet
@@ -124,17 +121,6 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
         fn=lambda: gr.update(visible=False),
         outputs=inscription_ui
     )
-    
-    btn_create.click(
-        creer_compte,
-        inputs=[p_reg, m_reg, mdp_reg, mdp_c_reg],
-        outputs=[inscription_ui, msg_create]
-    )
-
-    btn_test.click(
-        backend_service.fetch_add_user
-    )
-
 
     # ===============================================
     # ÉVÉNEMENTS - DÉCONNEXION
