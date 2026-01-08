@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_use_db
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_user_db,delete_resume_by_user_db
 from utils.encode import Encode
 encoder = Encode()
 
@@ -15,17 +15,25 @@ class UserRequest(BaseModel):
     pseudo : str  
     password : str
 
-class ResumeRequest(BaseModel): 
+class ResumeRequest(BaseModel):
     user_id: int
-    name : str  
-    text : str
+    name: str
+    text: str
 
 class UserResponse(BaseModel): 
     id : int
     pseudo : str
 
-class IDresponse(BaseModel): 
-    id : int   
+class IDresponse(BaseModel):
+    id : int
+
+class ResumeResponse(BaseModel):
+    id: int
+    resume_name: str
+    resume: str
+
+    class Config:
+        from_attributes = True  # Permet de valider depuis les objets SQLAlchemy
 
 API_ROOT_URL = f"http://{os.getenv('API_BASE_URL')}:{os.getenv('FAST_API_PORT', '8080')}" 
 
@@ -58,7 +66,8 @@ def add_user(user : UserRequest):
 
 
 @app.post("/add_resume/")
-def add_resume(resume : ResumeRequest):
+def add_resume(resume: ResumeRequest):
+    """Ajouter un nouveau résumé pour un utilisateur."""
     write_resume_db(
         user_id=resume.user_id,
         data=[{"name": resume.name, "text": resume.text}]
@@ -67,27 +76,40 @@ def add_resume(resume : ResumeRequest):
 
 @app.delete("/delete_user/{user_id}")
 def delete_user(user_id: int):
-    if delete_use_db(user_id):
-    
+    """Supprimer un utilisateur et tous ses résumés associés."""
+    if delete_user_db(user_id):
+
         return {"succes": True, "message": "L'utilisateur a été supprimé avec succès"}
     else:
         return {"succes": False, "message": "L'utilisateur n'a pas pu être supprimé"}
+    
+@app.delete("/delete_resume/{resume_id}")
+def delete_resume(resume_id: int):
+    """Supprimer un résumé spécifique par son ID."""
+    if delete_resume_by_user_db(resume_id):
+
+        return {"succes": True, "message": "Le résumé a été supprimé avec succès"}
+    else:
+        return {"succes": False, "message": "Le résumé n'a pas pu être supprimé"}
 
 
 
 @app.get("/get_resume/user/{user_id}")
-def get_resume_by_id(user_id: int) :
+def get_resume_by_id(user_id: int) -> dict:
+    """Récupérer tous les résumés d'un utilisateur par son ID."""
     try:
-        
-        df = read_resume_by_user_id(user_id)
-    
-        return df
+        resumes = read_resume_by_user_id(user_id)
+        if len(resumes) == 0:
+            return {"success" : False , "message": "Aucun résumé pour cette utilisateur ou l'utilisateur n'existe pas"}
+        data = [ResumeResponse.model_validate(r) for r in resumes]
+        return {"succes": True, "data": data}
     except Exception as e:
         return {"error": str(e)}
 
 @app.post("/login/")
-def login(user : UserRequest):
-    return {"succes": True, "message": "vous etes bien connecté"}
+def login(user: UserRequest):
+    """Authentifier un utilisateur (à implémenter)."""
+    return {"succes": True, "message": "vous etes bien connecté"}  # TODO: Implémenter le login
 
 
 if __name__ == "__main__":
