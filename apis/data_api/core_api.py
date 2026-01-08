@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_use_db
+from services.db_tools import initialize_db, write_user_db, write_resume_db,read_resume_by_user_id
 from utils.encode import Encode
 encoder = Encode()
 
@@ -65,6 +65,7 @@ def add_resume(resume : ResumeRequest):
     )
     return {"succes": True, "message": "Résumé ajouté et Summary mis à jour"}
 
+
 @app.delete("/delete_user/{user_id}")
 def delete_user(user_id: int):
     if delete_use_db(user_id):
@@ -75,19 +76,34 @@ def delete_user(user_id: int):
 
 
 
-@app.get("/get_resume/user/{user_id}")
-def get_resume_by_id(user_id: int) :
+@app.get("/get_resume/{user_id}")
+def get_resume_by_id(user_id: int):
     try:
-        
         df = read_resume_by_user_id(user_id)
-    
-        return df
+        
+        # On convertit le DF en liste de dictionnaires
+        # 'records' donne : [{"resume_name": "...", "resume": "..."}, ...]
+        resumes_list = df.to_dict(orient='records')
+        
+        return {
+            "success": True,
+            "resumes": resumes_list
+        }
     except Exception as e:
-        return {"error": str(e)}
+        return {
+            "success": False, 
+            "error": str(e),
+            "resumes": []
+        }
 
 @app.post("/login/")
 def login(user : UserRequest):
     return {"succes": True, "message": "vous etes bien connecté"}
+
+
+
+
+
 
 
 if __name__ == "__main__":

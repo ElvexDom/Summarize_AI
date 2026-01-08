@@ -1,4 +1,4 @@
-# app/frontend_gradio.py  (ou mieux app/ui/nlp_pipeline_ui.py)
+# app/ui/nlp_pipeline_ui.py
 
 import gradio as gr
 from app.api_client import FastAPIClient
@@ -8,8 +8,9 @@ from app.backend_service import BackendService
 # Client + BackendService
 # =======================
 ocr_api_client = FastAPIClient("http://localhost:8002")
+core_api = FastAPIClient("http://localhost:8001")
 backend_service = BackendService(ocr_api_client)
-
+backend_service_core = BackendService(core_api)
 # =======================
 # Interface Gradio
 # =======================
@@ -32,7 +33,19 @@ def create_nlp_pipeline_ui():
 
         resume_textbox = gr.Textbox(label="Résumé (modifiable)", lines=5)
         resume_button = gr.Button("📄 Résume le texte (NLP)")
-        resume_button.click(fn=backend_service.fetch_resume, inputs=ocr_textbox, outputs=resume_textbox)
+
+        with gr.Row():
+            with gr.Column():
+                text = resume_button.click(fn=backend_service.fetch_resume, inputs=ocr_textbox, outputs=resume_textbox)
+            with gr.Column():
+                resume_name_textbox = gr.Textbox(label="Nom du résumé (modifiable)",placeholder="Ex: CV_Jean_Dupont", lines=1)
+                save_resume_button = gr.Button("💾 Sauvegarder le résumé")
+                save_status = gr.Markdown()
+            with gr.Column():
+                save_resume_button.click(
+                    fn=backend_service_core.save_resume_to_db, 
+                    inputs=[resume_name_textbox, resume_textbox], 
+                    outputs=save_status)
 
         entities_textbox = gr.Textbox(label="Entités détectées (RoBERTa)", lines=15)
         ner_button = gr.Button("🔍 Détecter les entités (NER)")

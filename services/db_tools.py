@@ -20,8 +20,7 @@ DB_FILE_PATH_RELATIVE = os.path.join("data", "DB.db")
 
 # Détermination du répertoire racine du projet pour obtenir un chemin absolu fiable
 CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parent # Remonte de modules -> backend -> racine
-
+PROJECT_ROOT = CURRENT_DIR.parent # Remonte de modules -> services
 
 # Chemin Absolu vers la BDD
 DB_FILE_PATH = PROJECT_ROOT / DB_FILE_PATH_RELATIVE
@@ -174,49 +173,6 @@ def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
     finally:
         db.close()
 
-def delete_use_db(user_id: int) -> bool:
-    """
-    Supprime un utilisateur et tous ses résumés associés.
-    Retourne True si la suppression a réussi, False sinon.
-    """
-    db = get_db_session()
-    try:
-        # Etape 1 : Vérifier que l'utilisateur existe
-        user = db.query(Users).filter(Users.id == user_id).first()
-        if not user:
-            logger.warning(f"Utilisateur avec ID {user_id} introuvable.")
-            return False
-        
-        # Etape 2 : Récupérer tous les ID des résumés associés via Summary
-        summaries = db.query(Summary).filter(Summary.ID_user == user_id).all()
-        resume_ids = [s.ID_resume for s in summaries]
-        
-        # Etape 3 : Supprimer les entrées dans Summary
-        db.query(Summary).filter(Summary.ID_user == user_id).delete()
-        logger.info(f"Suppression de {len(summaries)} entrée(s) dans Summary.")
-        
-        # Etape 4 : Supprimer les résumés associés
-        if resume_ids:
-            deleted_resumes = db.query(Resume).filter(Resume.id.in_(resume_ids)).delete(synchronize_session=False)
-            logger.info(f"Suppression de {deleted_resumes} résumé(s).")
-        
-        # Etape 5 : Supprimer l'utilisateur
-        db.delete(user)
-        logger.success(f"Utilisateur {user.pseudo} (ID: {user_id}) supprimé avec succès.")
-        
-        # Etape 6 : Commit final
-        db.commit()
-        return True
-        
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Erreur lors de la suppression de l'utilisateur {user_id} : {e}")
-        return False
-        
-    finally:
-        db.close()
-        
-        
 def read_db() -> pd.DataFrame:
     """
     Lit tous les utilisateurs depuis la BDD et les renvoie sous forme de DataFrame.
@@ -253,41 +209,48 @@ def read_db() -> pd.DataFrame:
 
     finally:
         db.close()
-        
-        
+
 def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
     """
-    Lit tous les résumés d'un utilisateur depuis la BDD et les renvoie sous forme de DataFrame.
-    Gère le cas de BDD vide en retournant un DataFrame vide avec les colonnes attendues.
+    Lit les résumés associés à un utilisateur donné par son ID.
+    Retourne un DataFrame avec les colonnes 'resume_name' et 'resume'.
     """
     db = get_db_session()
     try:
-        # all_users = db.query(Users).all()
-        all_resumes = db.query(Resume).join(Summary).filter(Summary.ID_user == user_id).all()
-
+        summaries = (
+            db.query(Resume)
+            .join(Summary, Resume.id == Summary.ID_resume)
+            .filter(Summary.ID_user == user_id)
+            .all()
+        )
 
         data = []
-        for resume in all_resumes:
+        for summary in summaries:
+            name = summary.resume_name
+            text = summary.resume
+
+            # Nettoyage à la lecture
+            cleaned_name = name if name else "NULL_TEXT_EMPTY"
+            cleaned_text = text if text else "NULL_TEXT_EMPTY"
+
             data.append({
-                'id': resume.id,
-                'name': resume.resume_name,
-                'text': resume.resume
+                'resume_name': cleaned_name,
+                'resume': cleaned_text
             })
 
-            
-
-        # Cas BDD vide
+        # Cas BDD vide pour cet utilisateur
         if not data:
-            return pd.DataFrame(columns=['id', 'name', 'text']).set_index('id')
-        
-        return pd.DataFrame(data).set_index('id')
+            return pd.DataFrame(columns=['resume_name', 'resume'])
+
+        return pd.DataFrame(data)
 
     except SQLAlchemyError as e:
-        logger.error(f"Erreur de lecture : {e}")
-        return pd.DataFrame(columns=['id', 'name', 'text']).set_index('id')
+        logger.error(f"Erreur de lecture des résumés pour l'utilisateur {user_id} : {e}")
+        return pd.DataFrame(columns=['resume_name', 'resume'])
 
     finally:
         db.close()
+
 
 
 def initialize_db():

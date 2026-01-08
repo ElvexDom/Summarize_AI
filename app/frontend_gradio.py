@@ -44,7 +44,7 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     # ===============================================
     # SECTION NON CONNECTÉE
     # ===============================================
-    with gr.Column(visible=True) as section_non_connecte:
+    with gr.Column(visible=False) as section_non_connecte:
         gr.Markdown("### 🔐 **Connexion requise**")
         gr.Markdown("**Test**: `test` / `1234`")
         create_login_ui()
@@ -66,7 +66,7 @@ with gr.Blocks(title="📄 Summarize AI") as gradio:
     # ===============================================
     # SECTION CONNECTÉE
     # ===============================================
-    with gr.Column(visible=False) as section_connecte:
+    with gr.Column(visible=True) as section_connecte:
         gr.Markdown("### 👤 **Utilisateur connecté**")
         user_status = gr.Markdown()
         # show_toast("texte")
