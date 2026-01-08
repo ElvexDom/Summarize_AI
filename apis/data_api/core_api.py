@@ -4,9 +4,10 @@ import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import bcrypt
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_user_db,delete_resume_by_user_db
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_user_db,delete_resume_by_user_db,find_user_by_pseudo
 from utils.encode import Encode
 encoder = Encode()
 
@@ -23,6 +24,8 @@ class ResumeRequest(BaseModel):
 class UserResponse(BaseModel): 
     id : int
     pseudo : str
+    class Config:
+        from_attributes = True  # Permet de valider depuis les objets SQLAlchemy
 
 class IDresponse(BaseModel):
     id : int
@@ -52,7 +55,8 @@ def read_root():
 def add_user(user : UserRequest):
     """Ajouter un nouvel utilisateur. """
 
-    encode_password = encoder.chiffrer_message(user.password)
+    # encode_password = encoder.chiffrer_message(user.password)
+    encode_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode("utf-8")
     user_data = {"pseudo": user.pseudo,
             "password": encode_password}
     
@@ -109,7 +113,15 @@ def get_resume_by_id(user_id: int) -> dict:
 @app.post("/login/")
 def login(user: UserRequest):
     """Authentifier un utilisateur (à implémenter)."""
-    return {"succes": True, "message": "vous etes bien connecté"}  # TODO: Implémenter le login
+    user_found = find_user_by_pseudo(user.pseudo)
+    
+    if not user_found:
+        return {"succes": False, "message"  : "Pseudo ou mot de passe incorrect "} 
+    
+    if bcrypt.checkpw(user.password.encode('utf-8'),user_found.password.encode('utf-8')): 
+        return {"succes": True, "message": "vous etes bien connecté", "data":UserResponse.model_validate(user_found)}  
+    
+        
 
 
 if __name__ == "__main__":

@@ -288,6 +288,26 @@ def read_db() -> pd.DataFrame:
     finally:
         db.close()
         
+def find_user_by_pseudo(user_pseudo) -> Users | None:
+    """
+    Cherche un utilisateur dans la base de donnée grace au pseudo 
+    """
+    db = get_db_session()
+    try:
+        user = db.query(Users).filter(Users.pseudo == user_pseudo).first()
+        if user:
+            return user
+        else:
+            return None
+        
+
+    except SQLAlchemyError as e:
+        logger.error(f"Erreur de lecture dans la BDD : {e}")
+        return None
+
+    finally:
+        db.close()
+        
         
 def read_resume_by_user_id(user_id: int) -> list[Resume]:
     """
