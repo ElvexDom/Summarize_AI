@@ -81,12 +81,13 @@ def add_user(user : UserRequest):
     encode_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode("utf-8")
     user_data = {"pseudo": user.pseudo,
             "password": encode_password}
-
-    # Tentative d'écriture dans la base de données
-    if not write_user_db([user_data]):
-        return {"succes": False, "message": "Utilisateur existe déjà"}
-
-    return {"succes": True, "message": "Utilisateur ajouté"}
+    
+    write_user_db([user_data])
+    
+    # #Lecture pour récup l'id (optionnel -> juste pour l'affichage)
+    # df = read_db()
+    # last_user = df[df.pseudo == user.pseudo]
+    return {"success": True, "message": "Utilisateur ajouté"}
 
 @app.patch("/resume/{resume_id}")
 def update_resume(resume_id: int, resume: ResumeRequest):
@@ -140,7 +141,8 @@ def add_resume(resume: ResumeRequest):
         user_id=resume.user_id,
         data=[{"name": resume.name, "text": resume.text}]
     )
-    return {"succes": True, "message": "Résumé ajouté"}
+    return {"success": True, "message": "Résumé ajouté et Summary mis à jour"}
+
 
 @app.delete("/delete_user/{user_id}")
 def delete_user(user_id: int):
@@ -153,9 +155,9 @@ def delete_user(user_id: int):
         dict: Statut de succès et message.
     """
     if delete_user_db(user_id):
-        return {"succes": True, "message": "L'utilisateur a été supprimé avec succès"}
+        return {"success": True, "message": "L'utilisateur a été supprimé avec succès"}
     else:
-        return {"succes": False, "message": "L'utilisateur n'existe pas"}
+        return {"success": False, "message": "L'utilisateur n'existe pas"}
 
 @app.delete("/delete_resume/{resume_id}")
 def delete_resume(resume_id: int):
@@ -213,7 +215,14 @@ def login(user: UserRequest):
     user_found = find_user_by_pseudo(user.pseudo)
 
     if not user_found:
-        return {"succes": False, "message": "Pseudo ou mot de passe incorrect"}
+        return {"success": False, "message"  : "Pseudo ou mot de passe incorrect "} 
+    
+    if bcrypt.checkpw(user.password.encode('utf-8'),user_found.password.encode('utf-8')): 
+        return {"success": True, "message": "vous etes bien connecté", "data":UserResponse.model_validate(user_found)}  
+    
+        
+
+
 
     # Vérification du mot de passe avec bcrypt
     if bcrypt.checkpw(user.password.encode('utf-8'), user_found.password.encode('utf-8')):
@@ -233,5 +242,5 @@ if __name__ == "__main__":
         "apis.data_api.core_api:app",  # Chemin vers le module de l'application
         host="127.0.0.1",
         port=8001,
-        reload=True  # Recharge automatique pour le dev, à désactiver en prod
+        reload=False  # Recharge automatique pour le dev, à désactiver en prod
     )

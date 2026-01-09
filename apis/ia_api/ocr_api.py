@@ -159,5 +159,5 @@ if __name__ == "__main__":
         "apis.ia_api.ocr_api:app",  # Chemin vers le module de l'application
         host="127.0.0.1",
         port=8002,
-        reload=True  # Recharge automatique pour le dev, à désactiver en prod
+        reload=False  # Recharge automatique pour le dev, à désactiver en prod
     )
