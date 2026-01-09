@@ -106,9 +106,9 @@ def update_resume(resume_id: int, resume: ResumeRequest):
     )
 
     if result:
-        return {"succes": True, "message": "Résumé modifié"}
+        return {"success": True, "message": "Résumé modifié"}
     else:
-        return {"succes": False, "message": "Une erreur est survenue"}
+        return {"success": False, "message": "Une erreur est survenue"}
 
 @app.get("/resume/{resume_id}")
 def get_one_resume(resume_id: int):
@@ -123,9 +123,9 @@ def get_one_resume(resume_id: int):
     resume = get_resume_by_id(resume_id)
     print(resume)
     if resume == None:
-        return {"succes": False, "message": "Résumé introuvable"}
+        return {"success": False, "message": "Résumé introuvable"}
 
-    return {"succes": True, "data": ResumeResponse.model_validate(resume)}
+    return {"success": True, "data": ResumeResponse.model_validate(resume)}
 
 @app.post("/add_resume/")
 def add_resume(resume: ResumeRequest):
@@ -170,9 +170,9 @@ def delete_resume(resume_id: int):
         dict: Statut de succès et message.
     """
     if delete_resume_by_user_db(resume_id):
-        return {"succes": True, "message": "Le résumé a été supprimé avec succès"}
+        return {"success": True, "message": "Le résumé a été supprimé avec succès"}
     else:
-        return {"succes": False, "message": "Le résumé n'a pas pu être supprimé"}
+        return {"success": False, "message": "Le résumé n'a pas pu être supprimé"}
 
 @app.get("/get_resume/{user_id}")
 def get_resume_by_user_id(user_id: int):
@@ -216,23 +216,17 @@ def login(user: UserRequest):
 
     if not user_found:
         return {"success": False, "message"  : "Pseudo ou mot de passe incorrect "} 
-    
-    if bcrypt.checkpw(user.password.encode('utf-8'),user_found.password.encode('utf-8')): 
-        return {"success": True, "message": "vous etes bien connecté", "data":UserResponse.model_validate(user_found)}  
-    
-        
-
-
+ 
 
     # Vérification du mot de passe avec bcrypt
     if bcrypt.checkpw(user.password.encode('utf-8'), user_found.password.encode('utf-8')):
         return {
-            "succes": True,
+            "success": True,
             "message": "Vous êtes bien connecté",
             "data": UserResponse.model_validate(user_found)
         }
 
-    return {"succes": False, "message": "Pseudo ou mot de passe incorrect"}
+    return {"success": False, "message": "Pseudo ou mot de passe incorrect"}
 
 
 
