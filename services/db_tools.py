@@ -1,4 +1,4 @@
-# backend/modules/db_tools.py
+# Outils de gestion de la base de données SQLite avec SQLAlchemy
 import pandas as pd
 import os
 from loguru import logger
@@ -6,73 +6,82 @@ from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
 from pathlib import Path
 from typing import List, Union
 
-
-
-
 DataStorage = Union[pd.DataFrame, List[dict]]
+
 # --- 1. Configuration des Chemins ---
-# Chemin relatif de la BDD (comme spécifié par l'utilisateur)
+# Chemin relatif vers le fichier de base de données
 DB_FILE_PATH_RELATIVE = os.path.join("data", "DB.db")
 
-# Détermination du répertoire racine du projet pour obtenir un chemin absolu fiable
+# Détermination du répertoire racine du projet
 CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parent # Remonte de modules -> services
+PROJECT_ROOT = CURRENT_DIR.parent  # Remonte au niveau projet
 
-# Chemin Absolu vers la BDD
+# Chemin absolu vers la base de données
 DB_FILE_PATH = PROJECT_ROOT / DB_FILE_PATH_RELATIVE
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE_PATH.absolute()}" 
-#Création de la base de données :
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE_PATH.absolute()}"
+
+# Création du moteur de base de données SQLite
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
+    SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# --- 2. Modèle de Données (ORM) : La Classe Citation ---
+# --- 2. Modèles de Données (ORM) ---
 class Users(Base):
+    """Modèle utilisateur contenant les informations d'authentification."""
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    pseudo = Column(String)
+    pseudo = Column(String, unique=True)
     password = Column(String)
-    summaries = relationship("Summary", back_populates="user")
+    summaries = relationship("Summary", back_populates="user", cascade="all, delete-orphan")
 
 
 class Resume(Base):
+    """Modèle représentant un résumé de texte."""
     __tablename__ = 'resume'
     id = Column(Integer, primary_key=True, autoincrement=True)
     resume_name = Column(String)
     resume = Column(String)
-   
+
 
 class Summary(Base):
+    """Modèle de liaison entre utilisateurs et résumés (table d'association)."""
     __tablename__ = 'summary'
     id = Column(Integer, primary_key=True, autoincrement=True)
     ID_user = Column(Integer, ForeignKey(Users.id))
     ID_resume = Column(Integer, ForeignKey(Resume.id))
-    user = relationship("Users", back_populates="summaries") 
-    
-    
-# --- 3. Fonctions d'Interface (Le Contrat) ---
+    user = relationship("Users", back_populates="summaries")
+
+
+# --- 3. Fonctions d'Interface ---
 
 def get_db_session() -> Session:
-    """Fournit une session de BDD."""
+    """Crée et retourne une nouvelle session de base de données.
+
+    Returns:
+        Session: Session SQLAlchemy pour interagir avec la base de données.
+    """
     return SessionLocal()
 
 def write_user_db(data):
-    """
-    Écrit des utilisateurs en base de données.
-    Accepte une entrée de type pd.DataFrame ou List[dict].
-    Les clés attendues sont : 'pseudo' et 'password'.
+    """Enregistre un ou plusieurs utilisateurs dans la base de données.
+
+    Args:
+        data (Union[pd.DataFrame, List[dict]]): Données des utilisateurs.
+            Les clés/colonnes attendues sont 'pseudo' et 'password'.
+
+    Returns:
+        bool: True si l'écriture a réussi, False en cas d'erreur (utilisateur déjà existant).
     """
     users_to_insert = []
 
-    # --- SWITCH LOGIC: Conversion vers List[dict] ---
+    # Conversion vers List[dict]
     if isinstance(data, pd.DataFrame):
         logger.info("Conversion de l'entrée : DataFrame -> List[dict].")
         users_to_insert = data.reset_index().to_dict('records')
@@ -85,7 +94,7 @@ def write_user_db(data):
         logger.error(f"Type de donnée non supporté pour write_db : {type(data)}")
         raise TypeError("write_db n'accepte que pd.DataFrame ou List[dict].")
 
-    # --- Insertion SQLAlchemy ---
+    # Insertion dans la base de données
     db = get_db_session()
     try:
         for user_data in users_to_insert:
@@ -110,23 +119,72 @@ def write_user_db(data):
 
         db.commit()
         logger.success(f"Écriture de {len(users_to_insert)} utilisateur(s) dans la BDD réussie.")
+        return True
 
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"Erreur d'écriture dans la BDD : {e}")
+        return False
+
+    finally:
+        db.close()
+
+def update_resume_by_id(resume_id: int, data: dict):
+    """Met à jour un résumé existant par son ID.
+
+    Args:
+        resume_id (int): ID du résumé à modifier.
+        data (dict): Dictionnaire contenant les nouvelles données avec la clé 'text'.
+
+    Returns:
+        bool: True si la modification a réussi, False sinon.
+    """
+    if not isinstance(data, dict):
+        logger.error(f"Type de donnée non supporté pour update_resume_by_id : {type(data)}")
+        raise TypeError("update_resume_by_id n'accepte que dict.")
+
+    db = get_db_session()
+    try:
+        # Récupération du résumé
+        resume = db.query(Resume).filter(Resume.id == resume_id).first()
+
+        if not resume:
+            logger.warning(f"Résumé avec ID {resume_id} introuvable.")
+            return False
+
+        # Mise à jour du texte
+        text = data.get("text", "").strip()
+        if not text:
+            text = "NULL_TEXT_EMPTY"
+            logger.warning("Texte du résumé vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
+
+        resume.resume = text
+        db.flush()
+
+        # Commit final
+        db.commit()
+        logger.success(f"Modification du résumé {resume_id} réussie.")
+        return True
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Erreur de modification dans la BDD : {e}")
+        return False
 
     finally:
         db.close()
 
 def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
-    """
-    Enregistre un ou plusieurs résumés pour un utilisateur et met à jour la table Summary.
-    `user_id` : ID de l'utilisateur propriétaire du résumé.
-    `data` : pd.DataFrame ou List[dict] avec les clés 'name' et 'text'.
+    """Enregistre un ou plusieurs résumés pour un utilisateur et crée les liaisons dans Summary.
+
+    Args:
+        user_id (int): ID de l'utilisateur propriétaire des résumés.
+        data (Union[pd.DataFrame, List[dict]]): Données des résumés.
+            Les clés/colonnes attendues sont 'name' et 'text'.
     """
     resume_to_insert = []
 
-    # --- Conversion vers List[dict] ---
+    # Conversion vers List[dict]
     if isinstance(data, pd.DataFrame):
         logger.info("Conversion de l'entrée : DataFrame -> List[dict].")
         resume_to_insert = data.reset_index().to_dict('records')
@@ -138,6 +196,7 @@ def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
     else:
         logger.error(f"Type de donnée non supporté pour write_resume_db : {type(data)}")
         raise TypeError("write_resume_db n'accepte que pd.DataFrame ou List[dict].")
+    
 
     db = get_db_session()
     try:
@@ -153,16 +212,16 @@ def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
                 text = "NULL_TEXT_EMPTY"
                 logger.warning("Texte du résumé vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
 
-            # 1️⃣ Création du résumé
+            # Création du résumé
             new_resume = Resume(resume_name=name, resume=text)
             db.add(new_resume)
-            db.flush()  # récupère l'id du résumé avant commit
+            db.flush()  # Récupère l'ID du résumé avant commit
 
-            # 2️⃣ Création de la liaison Summary
+            # Création de la liaison dans la table Summary
             new_summary = Summary(ID_user=user_id, ID_resume=new_resume.id)
             db.add(new_summary)
 
-        # 3️⃣ Commit final
+        # Commit final
         db.commit()
         logger.success(f"Insertion de {len(resume_to_insert)} résumé(s) et mise à jour de Summary réussie.")
 
@@ -173,87 +232,106 @@ def write_resume_db(user_id: int, data: Union[pd.DataFrame, List[dict]]):
     finally:
         db.close()
 
-def delete_user_db(user_id: int) -> bool:
+def get_resume_by_id(resume_id):
+    """Récupère un résumé par son ID.
+
+    Args:
+        resume_id (int): ID du résumé à récupérer.
+
+    Returns:
+        Resume | None: Le résumé trouvé ou None si introuvable/ID invalide.
     """
-    Supprime un utilisateur et tous ses résumés associés.
-    Retourne True si la suppression a réussi, False sinon.
+    if not isinstance(resume_id, int):
+        logger.warning(f"L'ID du résumé est incorrect (type: {type(resume_id)})")
+        return None
+
+    db = get_db_session()
+    try:
+        resume = db.query(Resume).filter(Resume.id == resume_id).first()
+        if not resume:
+            logger.warning(f"Le résumé avec l'ID {resume_id} est introuvable")
+            return None
+
+        return resume
+    finally:
+        db.close()
+
+def delete_user_db(user_id: int) -> bool:
+    """Supprime un utilisateur et tous ses résumés associés via cascade.
+
+    Args:
+        user_id (int): ID de l'utilisateur à supprimer.
+
+    Returns:
+        bool: True si la suppression a réussi, False sinon.
     """
     db = get_db_session()
     try:
-        # Etape 1 : Vérifier que l'utilisateur existe
+        # Vérification de l'existence de l'utilisateur
         user = db.query(Users).filter(Users.id == user_id).first()
         if not user:
             logger.warning(f"Utilisateur avec ID {user_id} introuvable.")
             return False
-        
-        # Etape 2 : Récupérer tous les ID des résumés associés via Summary
-        summaries = db.query(Summary).filter(Summary.ID_user == user_id).all()
-        resume_ids = [s.ID_resume for s in summaries]
-        
-        # Etape 3 : Supprimer les entrées dans Summary
-        db.query(Summary).filter(Summary.ID_user == user_id).delete()
-        logger.info(f"Suppression de {len(summaries)} entrée(s) dans Summary.")
-        
-        # Etape 4 : Supprimer les résumés associés
-        if resume_ids:
-            deleted_resumes = db.query(Resume).filter(Resume.id.in_(resume_ids)).delete(synchronize_session=False)
-            logger.info(f"Suppression de {deleted_resumes} résumé(s).")
-        
-        # Etape 5 : Supprimer l'utilisateur
+
+        # Suppression de l'utilisateur (cascade="all, delete-orphan" gère les Summary automatiquement)
         db.delete(user)
         logger.success(f"Utilisateur {user.pseudo} (ID: {user_id}) supprimé avec succès.")
-        
-        # Etape 6 : Commit final
+
+        # Commit final
         db.commit()
         return True
-        
+
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"Erreur lors de la suppression de l'utilisateur {user_id} : {e}")
         return False
-        
-    finally:
-        db.close()
-        
-def delete_resume_by_user_db(resume_id: int) -> bool:
-    """
-    Supprime le résumé d'un utilisateur.
-    Retourne True si la suppression a réussi, False sinon.
-    """
-    db = get_db_session()
-    try:
-        # Etape 1 : Vérifier que l'utilisateur existe
-        summury = db.query(Summary).filter(Summary.ID_resume == resume_id).first()
-        if not summury:
-            logger.warning(f"Resumé avec ID {resume_id} introuvable.")
-            return False
-    
-        
-        # Etape 2 : Supprimer les entrées dans Summary
-        db.query(Summary).filter(Summary.ID_resume == resume_id).delete()
-        logger.info(f"Suppression du summury avec ID {resume_id}.")
-        
-        # Etape 3 : Supprimer le résumé associé
-        db.query(Resume).filter(Resume.id == resume_id).delete()
-        logger.info(f"Suppression du resume associé pour ID {resume_id}.")
-        
-        # Etape 4 : Commit final
-        db.commit()
-        return True
-        
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Erreur lors de la suppression du resume {resume_id} : {e}")
-        return False
-        
+
     finally:
         db.close()
 
-        
-def read_db() -> pd.DataFrame:
+def delete_resume_by_user_db(resume_id: int) -> bool:
+    """Supprime un résumé et ses liaisons dans la table Summary.
+
+    Args:
+        resume_id (int): ID du résumé à supprimer.
+
+    Returns:
+        bool: True si la suppression a réussi, False sinon.
     """
-    Lit tous les utilisateurs depuis la BDD et les renvoie sous forme de DataFrame.
-    Gère le cas de BDD vide en retournant un DataFrame vide avec les colonnes attendues.
+    db = get_db_session()
+    try:
+        # Vérification de l'existence du résumé via Summary
+        summary = db.query(Summary).filter(Summary.ID_resume == resume_id).first()
+        if not summary:
+            logger.warning(f"Résumé avec ID {resume_id} introuvable.")
+            return False
+
+        # Suppression des entrées dans Summary
+        db.query(Summary).filter(Summary.ID_resume == resume_id).delete()
+        logger.info(f"Suppression de la liaison Summary pour le résumé ID {resume_id}.")
+
+        # Suppression du résumé
+        db.query(Resume).filter(Resume.id == resume_id).delete()
+        logger.info(f"Suppression du résumé avec ID {resume_id}.")
+
+        # Commit final
+        db.commit()
+        return True
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Erreur lors de la suppression du résumé {resume_id} : {e}")
+        return False
+
+    finally:
+        db.close()
+
+def read_db() -> pd.DataFrame:
+    """Lit tous les utilisateurs depuis la base de données.
+
+    Returns:
+        pd.DataFrame: DataFrame contenant les colonnes 'id', 'pseudo' et 'password'.
+            Retourne un DataFrame vide avec les colonnes si aucun utilisateur n'existe.
     """
     db = get_db_session()
     try:
@@ -288,9 +366,14 @@ def read_db() -> pd.DataFrame:
         db.close()
 
 def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
-    """
-    Lit les résumés associés à un utilisateur donné par son ID.
-    Retourne un DataFrame avec les colonnes 'resume_name' et 'resume'.
+    """Lit tous les résumés associés à un utilisateur.
+
+    Args:
+        user_id (int): ID de l'utilisateur.
+
+    Returns:
+        pd.DataFrame: DataFrame contenant les colonnes 'resume_name' et 'resume'.
+            Retourne un DataFrame vide avec les colonnes si aucun résumé n'existe.
     """
     db = get_db_session()
     try:
@@ -329,17 +412,18 @@ def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
         db.close()
 
 def find_user_by_pseudo(user_pseudo) -> Users | None:
-    """
-    Cherche un utilisateur dans la base de donnée grace au pseudo 
+    """Recherche un utilisateur par son pseudo.
+
+    Args:
+        user_pseudo (str): Pseudo de l'utilisateur à rechercher.
+
+    Returns:
+        Users | None: L'utilisateur trouvé ou None si introuvable.
     """
     db = get_db_session()
     try:
         user = db.query(Users).filter(Users.pseudo == user_pseudo).first()
-        if user:
-            return user
-        else:
-            return None
-        
+        return user if user else None
 
     except SQLAlchemyError as e:
         logger.error(f"Erreur de lecture dans la BDD : {e}")
@@ -347,13 +431,13 @@ def find_user_by_pseudo(user_pseudo) -> Users | None:
 
     finally:
         db.close()
-        
 
 def initialize_db():
+    """Initialise la base de données en créant le dossier, le fichier SQLite et les tables.
+
+    Cette fonction est idempotente : elle peut être appelée plusieurs fois sans effet néfaste.
     """
-    Crée le dossier de données, la base SQLite et les tables si elles n'existent pas.
-    """
-    # 1. Création du dossier contenant la BDD
+    # Création du dossier de données
     data_dir = DB_FILE_PATH.parent
     if not data_dir.exists():
         data_dir.mkdir(parents=True, exist_ok=True)
@@ -361,12 +445,12 @@ def initialize_db():
     else:
         logger.info(f"Dossier '{data_dir}' déjà existant.")
 
-    # 2. Création / vérification de la base de données
+    # Vérification de l'existence de la base de données
     if DB_FILE_PATH.exists():
         logger.info("La base de données SQLite existe déjà.")
     else:
         logger.info(f"Création de la base de données SQLite à : {DB_FILE_PATH}")
 
-    # 3. Création des tables
+    # Création des tables (idempotent - ne recrée pas si elles existent)
     Base.metadata.create_all(bind=engine)
     logger.info("Les tables de la base de données ont été vérifiées/créées.")
