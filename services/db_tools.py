@@ -154,11 +154,13 @@ def update_resume_by_id(resume_id: int, data: dict):
 
         # Mise à jour du texte
         text = data.get("text", "").strip()
+        name = data.get("name", "").strip()
         if not text:
             text = "NULL_TEXT_EMPTY"
             logger.warning("Texte du résumé vide détecté, remplacé par 'NULL_TEXT_EMPTY'.")
 
         resume.resume = text
+        resume.resume_name = name
         db.flush()
 
         # Commit final
