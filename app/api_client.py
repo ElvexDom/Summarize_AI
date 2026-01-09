@@ -17,7 +17,7 @@ class FastAPIClient:
                 response = requests.post(
                     f"{self.base_url}/process_document/",
                     files=files,
-                    timeout=5
+                    timeout=60
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -41,7 +41,7 @@ class FastAPIClient:
                 response = requests.post(
                     f"{self.base_url}/ner_text/",
                     json={"text": text},
-                    timeout=5
+                    timeout=60
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -56,7 +56,7 @@ class FastAPIClient:
                 response = requests.post(
                     f"{self.base_url}/resume_text/",
                     json={"text": text},
-                    timeout=5
+                    timeout=60
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -122,8 +122,8 @@ class FastAPIClient:
             """
             try:
                 response = requests.post(
-                    f"{self.base_url}/save_resume/",
-                    json={"name": resume_name, "text": resume_text},
+                    f"{self.base_url}/add_resume/",
+                    json={"user_id": 1, "name": resume_name, "text": resume_text},
                     timeout=5
                 )
                 response.raise_for_status()
@@ -136,3 +136,22 @@ class FastAPIClient:
             except requests.RequestException as e:
                 print(f"[PIPELINE SAVE RESUME] {e}")
                 return f"❌ Erreur lors de la sauvegarde du résumé '{resume_name}'."
+
+        def fetch_read_resume(self, user_id: str) -> list:
+            """
+            Récupère tous les résumés d'un utilisateur depuis le backend.
+            Renvoie une liste de dicts : [{"id": 1, "resume_name": "...", "resume": "..."}, ...]
+            """
+            try:
+                response = requests.get(
+                    f"{self.base_url}/get_resumes/{user_id}",
+                    timeout=5
+                )
+                response.raise_for_status()
+                data = response.json()
+                if data.get("success") and "resumes" in data:
+                    return data["resumes"]
+                return []
+            except requests.RequestException as e:
+                print(f"[USER FETCH RESUME] {e}")
+                return []

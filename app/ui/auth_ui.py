@@ -9,7 +9,8 @@ class AuthUI:
         """
         self.user_client = user_client
         self.is_logged = gr.State(False)
-        self.auth_ui = None  # référence à la colonne principale de l'UI
+        self.current_user = gr.State("")
+        self.auth_ui = None
 
     def create(self):
         """Crée l'UI Auth avec onglets Login / Register"""
@@ -38,7 +39,7 @@ class AuthUI:
         self.btn_login.click(
             self.login,
             inputs=[self.login_pseudo, self.login_mdp],
-            outputs=[self.login_status, self.is_logged]
+            outputs=[self.login_status, self.is_logged, self.current_user]  # <-- pseudo renvoyé ici
         )
 
         self.btn_register.click(
@@ -47,14 +48,14 @@ class AuthUI:
             outputs=[self.register_status]
         )
 
-        return auth_ui, self.is_logged
+        return auth_ui, self.is_logged, self.current_user
 
     # --------------------- ACTIONS ---------------------
     def login(self, pseudo, mdp):
         """Connexion via user_client"""
         if self.user_client.fetch_login_user(pseudo, mdp):
-            return f"✅ **{pseudo} connecté**", True
-        return "❌ Identifiants incorrects", False
+            return "", True, pseudo
+        return "❌ Identifiants incorrects", False, ""
 
     def register(self, pseudo, mdp, confirm):
         """Inscription via user_client"""

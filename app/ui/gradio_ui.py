@@ -17,11 +17,6 @@ class GradioUI:
         self.authUI = None
         self.resumeUI = None
         self.pipelineUI = None
-        # self.pipelineUI = PipelineUI(
-        #     user_client=self.user_client,
-        #     pipeline_client=self.pipeline_client
-        # )
-        # self.pipelineUI.create()
 
     def create(self):
         """
@@ -37,15 +32,11 @@ class GradioUI:
 
             # -------- SECTION CONNECTÉE --------
             with gr.Column(visible=False) as section_connecte:
-                gr.Markdown("### 👤 Utilisateur connecté")
+                # Markdown dynamique pour afficher le pseudo
+                self.user_label = gr.Markdown("")  
                 btn_logout = gr.Button("🚪 Déconnexion", variant="stop")
 
                 with gr.Tabs():
-                    # Onglet "Rechercher" → ResumeUI
-                    with gr.Tab("🔍 Rechercher"):
-                        self.resumeUI = ResumeUI(user_client=self.user_client)
-                        self.resumeUI.create()
-
                     # Onglet "Générer" → PipelineUI
                     with gr.Tab("📄 Générer"):
                         self.pipelineUI = PipelineUI(
@@ -54,37 +45,42 @@ class GradioUI:
                         )
                         self.pipelineUI.create()
 
+                    # Onglet "Rechercher" → ResumeUI
+                    with gr.Tab("🔍 Rechercher"):
+                        self.resumeUI = ResumeUI(user_client=self.user_client)
+                        self.resumeUI.create()
+
             # -------- GESTION LOGIN / VISIBILITÉ --------
-            def on_login(logged):
+            def on_login(logged, pseudo):
                 """
                 Après login réussi :
-                - supprime AuthUI
+                - cache AuthUI
                 - affiche section connectée
+                - met à jour le Markdown avec le pseudo
                 """
                 if logged:
-                    return self.authUI.delete(), gr.update(visible=True)
+                    return gr.update(visible=False), gr.update(visible=True), f"### 👤 Bonjour, {pseudo} !"
                 else:
-                    self.authUI.create()
-                    return gr.update(visible=False)
+                    return gr.update(visible=True), gr.update(visible=False), ""
 
-            # ✅ Utilisation directe du State de AuthUI
+            # Lier le State pseudo et is_logged pour mettre à jour Markdown
             self.authUI.is_logged.change(
                 on_login,
-                inputs=self.authUI.is_logged,
-                outputs=[self.authUI.auth_ui, section_connecte]
+                inputs=[self.authUI.is_logged, self.authUI.current_user],
+                outputs=[self.authUI.auth_ui, section_connecte, self.user_label]
             )
 
             # -------- DÉCONNEXION --------
             def logout():
                 """
-                Réaffiche AuthUI et cache section connectée
+                Cache section connectée, réaffiche AuthUI
+                et remet is_logged à False
                 """
-                self.authUI.create()
-                return gr.update(visible=False)
+                return gr.update(visible=True), gr.update(visible=False), False
 
             btn_logout.click(
                 logout,
-                outputs=[self.authUI.auth_ui, section_connecte]
+                outputs=[self.authUI.auth_ui, section_connecte, self.authUI.is_logged]
             )
 
     def start(self, share: bool = False, debug: bool = False):

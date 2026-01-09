@@ -65,7 +65,7 @@ def add_user(user : UserRequest):
     # #Lecture pour récup l'id (optionnel -> juste pour l'affichage)
     # df = read_db()
     # last_user = df[df.pseudo == user.pseudo]
-    return {"succes": True, "message": "Utilisateur ajouté"}
+    return {"success": True, "message": "Utilisateur ajouté"}
 
 
 
@@ -76,7 +76,7 @@ def add_resume(resume: ResumeRequest):
         user_id=resume.user_id,
         data=[{"name": resume.name, "text": resume.text}]
     )
-    return {"succes": True, "message": "Résumé ajouté et Summary mis à jour"}
+    return {"success": True, "message": "Résumé ajouté et Summary mis à jour"}
 
 
 @app.delete("/delete_user/{user_id}")
@@ -84,9 +84,9 @@ def delete_user(user_id: int):
     """Supprimer un utilisateur et tous ses résumés associés."""
     if delete_user_db(user_id):
 
-        return {"succes": True, "message": "L'utilisateur a été supprimé avec succès"}
+        return {"success": True, "message": "L'utilisateur a été supprimé avec succès"}
     else:
-        return {"succes": False, "message": "L'utilisateur n'a pas pu être supprimé"}
+        return {"success": False, "message": "L'utilisateur n'a pas pu être supprimé"}
     
 @app.delete("/delete_resume/{resume_id}")
 def delete_resume(resume_id: int):
@@ -125,10 +125,10 @@ def login(user: UserRequest):
     user_found = find_user_by_pseudo(user.pseudo)
     
     if not user_found:
-        return {"succes": False, "message"  : "Pseudo ou mot de passe incorrect "} 
+        return {"success": False, "message"  : "Pseudo ou mot de passe incorrect "} 
     
     if bcrypt.checkpw(user.password.encode('utf-8'),user_found.password.encode('utf-8')): 
-        return {"succes": True, "message": "vous etes bien connecté", "data":UserResponse.model_validate(user_found)}  
+        return {"success": True, "message": "vous etes bien connecté", "data":UserResponse.model_validate(user_found)}  
     
         
 
@@ -144,5 +144,5 @@ if __name__ == "__main__":
         "apis.data_api.core_api:app",  # Chemin vers le module de l'application
         host="127.0.0.1",
         port=8001,
-        reload=True  # Recharge automatique pour le dev, à désactiver en prod
+        reload=False  # Recharge automatique pour le dev, à désactiver en prod
     )
