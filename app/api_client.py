@@ -1,6 +1,7 @@
 # app/api_client.py
 import requests
 from pathlib import Path
+import pandas as pd
 
 class FastAPIClient:
 
@@ -144,14 +145,14 @@ class FastAPIClient:
             """
             try:
                 response = requests.get(
-                    f"{self.base_url}/get_resumes/{user_id}",
+                    f"{self.base_url}/get_resume/{user_id}",
                     timeout=5
                 )
                 response.raise_for_status()
                 data = response.json()
                 if data.get("success") and "resumes" in data:
-                    return data["resumes"]
-                return []
+                    return pd.DataFrame(data.get("resumes", []))
+                return pd.DataFrame(columns=["id", "resume_name", "resume"])
             except requests.RequestException as e:
                 print(f"[USER FETCH RESUME] {e}")
-                return []
+                return pd.DataFrame()

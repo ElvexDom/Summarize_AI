@@ -386,6 +386,7 @@ def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
 
         data = []
         for summary in summaries:
+            id = summary.id
             name = summary.resume_name
             text = summary.resume
 
@@ -394,6 +395,7 @@ def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
             cleaned_text = text if text else "NULL_TEXT_EMPTY"
 
             data.append({
+                'id' : id,
                 'resume_name': cleaned_name,
                 'resume': cleaned_text
             })

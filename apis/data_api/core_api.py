@@ -189,6 +189,7 @@ def get_resume_by_user_id(user_id: int):
 
         # Conversion du DataFrame en liste de dictionnaires
         resumes_list = df.to_dict(orient='records')
+        print(f"RESUME {resumes_list}")
 
         return {
             "success": True,
