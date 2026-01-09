@@ -88,6 +88,7 @@ pip install torch
 pip install transformers
 pip install gradio
 pip install loguru
+pip install bcrypt
 ```
 ---
 
