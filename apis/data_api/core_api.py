@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import bcrypt
 load_dotenv()
 
-from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_user_db,delete_resume_by_user_db
+from services.db_tools import initialize_db, read_db, write_user_db, write_resume_db,read_resume_by_user_id, delete_user_db,delete_resume_by_user_db,find_user_by_pseudo
 from utils.encode import Encode
 encoder = Encode()
 
