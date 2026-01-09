@@ -9,6 +9,8 @@ class ResumeUI:
         """
         self.user_client = user_client
         self.resume_ui = None  # référence à la colonne principale de l'UI
+        self.id_resume = gr.State(None)
+        self.deleted_resume = gr.State(False)
 
     def create(self):
         """
@@ -31,6 +33,7 @@ class ResumeUI:
 
             # Zone de lecture pour le résumé sélectionné
             display_area = gr.Markdown("### Détails du résumé sélectionné")
+            btn_delete = gr.Button("Supprimer", variant="primary")
 
             # --- LOGIQUE DES BOUTONS ---
 
@@ -41,6 +44,24 @@ class ResumeUI:
                 outputs=[data_table]# Met à jour le TABLEAU
             )
 
+            btn_delete.click(
+                fn=self.user_client.delete_resume,
+                inputs=[self.id_resume], # Envoie l'ID à la fonction
+                outputs=[self.deleted_resume]# Met à jour le TABLEAU
+            )
+
+            def update_id(df, evt: gr.SelectData):
+                # evt.index contient (row_index, col_index)
+                row_index = evt.index[0]
+
+                try:
+                    # Récupérer l'id dans la première colonne (col 0)
+                    id_resume = int(df.iloc[row_index, 0])
+                    return id_resume  # mettra à jour gr.State
+                except Exception as e:
+                    print(f"Erreur update_id: {e}")
+                    return None
+
             def show_details(df, evt: gr.SelectData):
                 # evt.index contient (row_index, col_index)
                 row_index = evt.index[0]
@@ -48,7 +69,6 @@ class ResumeUI:
                 try:
                     # On accède aux cellules par leur position (0 = 1ère col, 1 = 2ème col, etc.)
                     # Selon votre API : 0 est 'resume_name' et 1 est 'resume'
-                    id = df.iloc[row_index, 0]
                     name = df.iloc[row_index, 1]
                     text = df.iloc[row_index, 2]
             
@@ -60,6 +80,12 @@ class ResumeUI:
                 fn=show_details,
                 inputs=[data_table],
                 outputs=[display_area]
+            )
+
+            data_table.select(
+                fn=update_id,
+                inputs=[data_table],
+                outputs=[self.id_resume]
             )
 
         return resume_ui

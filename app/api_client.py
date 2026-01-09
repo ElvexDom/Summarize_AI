@@ -156,3 +156,17 @@ class FastAPIClient:
             except requests.RequestException as e:
                 print(f"[USER FETCH RESUME] {e}")
                 return pd.DataFrame()
+
+        def delete_resume(self, resume_id: int) -> bool:
+            try:
+                response = requests.delete(
+                    f"{self.base_url}/delete_resume/{resume_id}",
+                    timeout=5
+                )
+                response.raise_for_status()
+                data = response.json()
+                return bool(data.get("success"))
+
+            except requests.RequestException as e:
+                print(f"[USER DELETE] {e}")
+                return False
