@@ -3,13 +3,17 @@ import requests
 from pathlib import Path
 import pandas as pd
 
+
 class FastAPIClient:
 
-    # ================= PIPELINE =================
+    # ========================================
+    # PIPELINE
+    # ========================================
     class Pipeline:
         def __init__(self, base_url: str):
             self.base_url = base_url.rstrip("/")
 
+        # ---- OCR ----
         def fetch_ocr(self, image_path: str) -> str:
             try:
                 image_bytes = Path(image_path).read_bytes()
@@ -28,15 +32,14 @@ class FastAPIClient:
 
                 pages = []
                 for page in data["text"]["results"]:
-                    pages.append(
-                        "\n".join(line["text"] for line in page["texts"])
-                    )
+                    pages.append("\n".join(line["text"] for line in page["texts"]))
                 return "\n".join(pages)
 
             except (requests.RequestException, FileNotFoundError) as e:
                 print(f"[PIPELINE OCR] {e}")
                 return ""
 
+        # ---- NER ----
         def fetch_ner(self, text: str) -> str:
             try:
                 response = requests.post(
@@ -52,6 +55,7 @@ class FastAPIClient:
                 print(f"[PIPELINE NER] {e}")
                 return ""
 
+        # ---- RESUME ----
         def fetch_resume(self, text: str) -> str:
             try:
                 response = requests.post(
@@ -67,11 +71,14 @@ class FastAPIClient:
                 print(f"[PIPELINE RESUME] {e}")
                 return ""
 
-    # ================= USER =================
+    # ========================================
+    # USER
+    # ========================================
     class User:
         def __init__(self, base_url: str):
             self.base_url = base_url.rstrip("/")
 
+        # ---- ADD USER ----
         def fetch_add_user(self, username: str, password: str) -> bool:
             try:
                 response = requests.post(
@@ -87,7 +94,8 @@ class FastAPIClient:
                 print(f"[USER ADD] {e}")
                 return False
 
-        def fetch_login_user(self, username: str, password: str) -> bool:
+        # ---- LOGIN USER ----
+        def fetch_login_user(self, username: str, password: str) -> dict:
             try:
                 response = requests.post(
                     f"{self.base_url}/login/",
@@ -95,13 +103,13 @@ class FastAPIClient:
                     timeout=5
                 )
                 response.raise_for_status()
-                data = response.json()
-                return bool(data.get("success"))
+                return response.json()
 
             except requests.RequestException as e:
                 print(f"[USER LOGIN] {e}")
-                return False
+                return {}
 
+        # ---- DELETE USER ----
         def delete_user(self, user_id: int) -> bool:
             try:
                 response = requests.delete(
@@ -116,36 +124,29 @@ class FastAPIClient:
                 print(f"[USER DELETE] {e}")
                 return False
 
-        def save_resume_to_db(self, resume_name: str, resume_text: str) -> str:
-            """
-            Sauvegarde le résumé dans la base de données via le backend.
-            Renvoie un message de succès ou d'erreur.
-            """
+        # ---- SAVE RESUME ----
+        def save_resume_to_db(self, resume_name: str, resume_text: str, user: str) -> str:
             try:
                 response = requests.post(
                     f"{self.base_url}/add_resume/",
-                    json={"user_id": 1, "name": resume_name, "text": resume_text},
+                    json={"user_id": user['id'], "name": resume_name, "text": resume_text},
                     timeout=5
                 )
                 response.raise_for_status()
                 data = response.json()
                 if data.get("success"):
                     return f"✅ Résumé '{resume_name}' sauvegardé avec succès."
-                else:
-                    return f"❌ Échec de la sauvegarde du résumé '{resume_name}'."
+                return f"❌ Échec de la sauvegarde du résumé '{resume_name}'."
 
             except requests.RequestException as e:
                 print(f"[PIPELINE SAVE RESUME] {e}")
                 return f"❌ Erreur lors de la sauvegarde du résumé '{resume_name}'."
 
-        def fetch_read_resume(self, user_id: str) -> list:
-            """
-            Récupère tous les résumés d'un utilisateur depuis le backend.
-            Renvoie une liste de dicts : [{"id": 1, "resume_name": "...", "resume": "..."}, ...]
-            """
+        # ---- FETCH READ RESUME ----
+        def fetch_read_resume(self, user: str) -> pd.DataFrame:
             try:
                 response = requests.get(
-                    f"{self.base_url}/get_resume/{user_id}",
+                    f"{self.base_url}/get_resume/{user['id']}",
                     timeout=5
                 )
                 response.raise_for_status()
@@ -153,11 +154,17 @@ class FastAPIClient:
                 if data.get("success") and "resumes" in data:
                     return pd.DataFrame(data.get("resumes", []))
                 return pd.DataFrame(columns=["id", "resume_name", "resume"])
+
             except requests.RequestException as e:
                 print(f"[USER FETCH RESUME] {e}")
                 return pd.DataFrame()
 
+        # ---- DELETE RESUME ----
         def delete_resume(self, resume_id: int) -> bool:
+            """
+            Supprime un résumé côté API.
+            Retourne True si la suppression a réussi, False sinon.
+            """
             try:
                 response = requests.delete(
                     f"{self.base_url}/delete_resume/{resume_id}",
@@ -165,7 +172,8 @@ class FastAPIClient:
                 )
                 response.raise_for_status()
                 data = response.json()
-                return bool(data.get("success"))
+                success = bool(data.get("success"))
+                return success
 
             except requests.RequestException as e:
                 print(f"[USER DELETE] {e}")

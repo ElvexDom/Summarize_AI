@@ -1,21 +1,26 @@
+# app/ui/ui.py
 import gradio as gr
 from app.api_client import FastAPIClient
 
 class PipelineUI:
-    def __init__(self, user_client: FastAPIClient.User, pipeline_client: FastAPIClient.Pipeline):
-        """
-        UI pour le pipeline : OCR → Résumé → NER
-        """
-        self.user_client = user_client
-        self.pipeline_client = pipeline_client
-        self.pipeline_ui = None
+    # ========================================
+    # INITIALISATION DE LA SECTION PIPELINE
+    # ========================================
+    def __init__(self, user_api: FastAPIClient.User, pipeline_api: FastAPIClient.Pipeline, user: gr.State):
+        self.user_api = user_api
+        self.pipeline_api = pipeline_api
+        self.user = user
 
-    def create(self):
-        """
-        Crée l'UI Gradio pour le pipeline
-        """
-        with gr.Column() as pipeline_ui:
-            self.pipeline_ui = pipeline_ui
+        # Construire l'UI dès l'initialisation
+        self._build()
+
+    # ========================================
+    # CRÉATION DE L'UI PIPELINE
+    # ========================================
+    def _build(self):
+        with gr.Column() as self.ui:
+
+            # ---- Header ----
             gr.Markdown("## 📄 Pipeline : OCR → Résumé → NER")
             gr.Markdown(
                 "1️⃣ Charge une image et récupère le texte\n"
@@ -23,7 +28,7 @@ class PipelineUI:
                 "3️⃣ Détecte les entités (NER) dans le texte OCR"
             )
 
-            # ---------------- INPUT IMAGE ----------------
+            # ---- INPUT IMAGE ----
             with gr.Row():
                 image_input = gr.Image(
                     type="filepath",
@@ -31,16 +36,16 @@ class PipelineUI:
                     height=250
                 )
 
-            # ---------------- OCR ----------------
+            # ---- OCR ----
             ocr_textbox = gr.Textbox(label="Texte OCR (modifiable)", lines=15)
             ocr_button = gr.Button("📄 Extraire le texte (OCR)")
             ocr_button.click(
-                fn=self.pipeline_client.fetch_ocr,
+                fn=self.pipeline_api.fetch_ocr,
                 inputs=image_input,
                 outputs=ocr_textbox
             )
 
-            # ---------------- RESUME ----------------
+            # ---- RÉSUMÉ ----
             resume_textbox = gr.Textbox(label="Résumé (modifiable)", lines=5)
             resume_button = gr.Button("📄 Résume le texte (PIPELINE)")
 
@@ -49,7 +54,7 @@ class PipelineUI:
                 with gr.Column():
                     # Bouton pour générer le résumé depuis le texte OCR
                     resume_button.click(
-                        fn=self.pipeline_client.fetch_resume,
+                        fn=self.pipeline_api.fetch_resume,
                         inputs=ocr_textbox,
                         outputs=resume_textbox
                     )
@@ -67,21 +72,25 @@ class PipelineUI:
                 with gr.Column():
                     # Action du bouton sauvegarder
                     save_resume_button.click(
-                        fn=self.user_client.save_resume_to_db,  # Remplace par backend_service_core si besoin
-                        inputs=[resume_name_textbox, resume_textbox],
+                        fn=self.user_api.save_resume_to_db,
+                        inputs=[resume_name_textbox, resume_textbox, self.user],
                         outputs=save_status
                     )
 
-            # ---------------- NER ----------------
+            # ---- NER ----
             entities_textbox = gr.Textbox(label="Entités détectées (RoBERTa)", lines=15)
             ner_button = gr.Button("🔍 Détecter les entités (NER)")
             ner_button.click(
-                fn=self.pipeline_client.fetch_ner,
+                fn=self.pipeline_api.fetch_ner,
                 inputs=ocr_textbox,
                 outputs=entities_textbox
             )
 
-    # ---------------- VISIBILITÉ ----------------
-    def delete(self):
-        """Supprime complètement le composant UI"""
+    # ========================================
+    # AFFICHAGE / MASQUAGE DE LA SECTION
+    # ========================================
+    def show(self) -> gr.update:
+        return gr.update(visible=True)
+
+    def hide(self) -> gr.update:
         return gr.update(visible=False, value=None)

@@ -1,93 +1,70 @@
 # app/ui/gradio_ui.py
 import gradio as gr
-from app.api_client import FastAPIClient
 from app.ui.auth_ui import AuthUI
-from app.ui.resume_ui import ResumeUI
-from app.ui.pipeline_ui import PipelineUI
+from app.ui.home_ui import HomeUI
 from utils.log_watcher import LogWatcher
 
 class GradioUI:
-    def __init__(self, user_client: FastAPIClient.User, pipeline_client: FastAPIClient.Pipeline):
+    """Interface Gradio principale pour l'application Summarize AI.
+
+    Gère l'affichage de l'UI d'authentification et de la section principale (HomeUI),
+    ainsi que les callbacks login/logout.
+    """
+
+    def __init__(self, user_api: object, pipeline_api: object):
         """
-        Initialise l'application Gradio avec les clients API User et Pipeline.
+        Initialise l'UI Gradio et construit directement tous les composants.
+
+        Args:
+            user_api (FastAPIClient.User): Client pour l'API utilisateur
+            pipeline_api (FastAPIClient.Pipeline): Client pour l'API pipeline
         """
-        self.user_client = user_client
-        self.pipeline_client = pipeline_client
-        self.gradio_ui = None
-        self.authUI = None
-        self.resumeUI = None
-        self.pipelineUI = None
+        self.user_api = user_api
+        self.pipeline_api = pipeline_api
 
-    def create(self):
-        """
-        Crée la structure de l'interface Gradio
-        """
-        with gr.Blocks(title="Summarize AI") as self.gradio_ui:
-            gr.Markdown("<center><h1><b>📄 Extraction & Résumé</b></h1></center>")
+        LogWatcher.log("info", "Initialisation de l'interface Gradio...", screen=True)
 
-            # -------- SECTION AUTHENTIFICATION --------
-            with gr.Column(visible=True) as section_auth:
-                self.authUI = AuthUI(user_client=self.user_client)
-                self.authUI.create()  # construit l'UI Auth
+        # Construire l'UI dès l'initialisation
+        self._build()
 
-            # -------- SECTION CONNECTÉE --------
-            with gr.Column(visible=False) as section_connecte:
-                # Markdown dynamique pour afficher le pseudo
-                self.user_label = gr.Markdown("")  
-                btn_logout = gr.Button("🚪 Déconnexion", variant="stop")
+    # ---- Méthode interne pour construire l'UI ----
+    def _build(self):
+        """Construit l'interface Gradio complète avec AuthUI et HomeUI."""
+        try:
+            with gr.Blocks(title="Summarize AI") as self.ui:
 
-                with gr.Tabs():
-                    # Onglet "Générer" → PipelineUI
-                    with gr.Tab("📄 Générer"):
-                        self.pipelineUI = PipelineUI(
-                            user_client=self.user_client,
-                            pipeline_client=self.pipeline_client
-                        )
-                        self.pipelineUI.create()
+                # Header principal
+                gr.Markdown("<center><h1><b>📄 Extraction & Résumé</b></h1></center>")
 
-                    # Onglet "Rechercher" → ResumeUI
-                    with gr.Tab("🔍 Rechercher"):
-                        self.resumeUI = ResumeUI(user_client=self.user_client)
-                        self.resumeUI.create()
+                # AuthUI : construit automatiquement
+                self.auth = AuthUI(self.user_api)
 
-            # -------- GESTION LOGIN / VISIBILITÉ --------
-            def on_login(logged, pseudo):
-                """
-                Après login réussi :
-                - cache AuthUI
-                - affiche section connectée
-                - met à jour le Markdown avec le pseudo
-                """
-                if logged:
-                    return gr.update(visible=False), gr.update(visible=True), f"### 👤 Bonjour, {pseudo} !"
-                else:
-                    return gr.update(visible=True), gr.update(visible=False), ""
+                # HomeUI : construit automatiquement
+                self.home = HomeUI(self.user_api, self.pipeline_api, self.auth.user)
 
-            # Lier le State pseudo et is_logged pour mettre à jour Markdown
-            self.authUI.is_logged.change(
-                on_login,
-                inputs=[self.authUI.is_logged, self.authUI.current_user],
-                outputs=[self.authUI.auth_ui, section_connecte, self.user_label]
-            )
+                LogWatcher.log("info", "Composants AuthUI et HomeUI construits.", screen=True)
 
-            # -------- DÉCONNEXION --------
-            def logout():
-                """
-                Cache section connectée, réaffiche AuthUI
-                et remet is_logged à False
-                """
-                return gr.update(visible=True), gr.update(visible=False), False
+                # ---- Callbacks ----
+                self.auth.connected.change(
+                    self.handle_connection_change,
+                    inputs=[self.auth.connected, self.auth.user],
+                    outputs=[self.auth.ui, self.home.ui, self.home.welcome]
+                )
 
-            btn_logout.click(
-                logout,
-                outputs=[self.authUI.auth_ui, section_connecte, self.authUI.is_logged]
-            )
+                # Bouton logout : met connected à False directement
+                self.home.btn_logout.click(
+                    lambda: False,
+                    outputs=[self.auth.connected]
+                )
+        except Exception as e:
+            LogWatcher.log("error", f"Erreur lors de la construction de l'UI : {e}", screen=True)
+            raise e
 
-    def start(self, share: bool = False, debug: bool = False):
-        """
-        Démarre l'interface Gradio
-        """
-        if not self.gradio_ui:
-            self.create()
-        LogWatcher.log("info", "Démarrage de l'interface Gradio...", screen=True)
-        self.gradio_ui.launch(share=share, debug=debug)
+    # ---- Callback pour login / logout ----
+    def handle_connection_change(self, connected: bool, user: dict) -> tuple[gr.update, gr.update, str]:
+        if connected:
+            LogWatcher.log("info", f"Utilisateur '{user['pseudo']}' connecté.", screen=True)
+            return self.auth.hide(), self.home.show(), f"### 👤 Bonjour, {user['pseudo']} !"
+        else:
+            LogWatcher.log("info", "Utilisateur déconnecté.", screen=True)
+            return self.auth.show(), self.home.hide(), ""
