@@ -48,7 +48,12 @@ class GradioUI:
                 self.auth.connected.change(
                     self.handle_connection_change,
                     inputs=[self.auth.connected, self.auth.user],
-                    outputs=[self.auth.ui, self.home.ui, self.home.welcome]
+                    outputs=[
+                        self.auth.ui,
+                        self.home.ui,
+                        self.home.welcome,
+                        self.home.resume.data_table
+                    ]
                 )
 
                 # Bouton logout : met connected à False directement
@@ -61,10 +66,25 @@ class GradioUI:
             raise e
 
     # ---- Callback pour login / logout ----
-    def handle_connection_change(self, connected: bool, user: dict) -> tuple[gr.update, gr.update, str]:
+    def handle_connection_change(self, connected: bool, user: dict):
+        """Gère l'affichage des pages et rafraîchit le tableau des résumés à la connexion."""
         if connected:
             LogWatcher.log("info", f"Utilisateur '{user['pseudo']}' connecté.", screen=True)
-            return self.auth.hide(), self.home.show(), f"### 👤 Bonjour, {user['pseudo']} !"
+
+            # 🌸 Mettre à jour le tableau des résumés automatiquement
+            updated_table = self.home.resume.refresh_table(user)
+
+            return (
+                self.auth.hide(),
+                self.home.show(),
+                f"### 👤 Bonjour, {user['pseudo']} !",
+                updated_table
+            )
         else:
             LogWatcher.log("info", "Utilisateur déconnecté.", screen=True)
-            return self.auth.show(), self.home.hide(), ""
+            return (
+                self.auth.show(),
+                self.home.hide(),
+                "",
+                []
+            )
