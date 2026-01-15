@@ -9,8 +9,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
 from typing import List, Union
 
-DataStorage = Union[pd.DataFrame, List[dict]]
-
 # --- 1. Configuration des Chemins ---
 # Chemin relatif vers le fichier de base de données
 DB_FILE_PATH_RELATIVE = os.path.join("data", "DB.db")
@@ -368,14 +366,14 @@ def read_db() -> pd.DataFrame:
         db.close()
 
 def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
-    """Lit tous les résumés associés à un utilisateur.
+    """Lit tous les résumés associés à un utilisateur et renvoie un dictionnaire.
 
     Args:
         user_id (int): ID de l'utilisateur.
 
     Returns:
-        pd.DataFrame: DataFrame contenant les colonnes 'resume_name' et 'resume'.
-            Retourne un DataFrame vide avec les colonnes si aucun résumé n'existe.
+        dict: Dictionnaire contenant les clés 'id', 'resume_name' et 'resume'.
+              Retourne un dictionnaire vide si aucun résumé n'existe.
     """
     db = get_db_session()
     try:
@@ -402,15 +400,11 @@ def read_resume_by_user_id(user_id: int) -> pd.DataFrame:
                 'resume': cleaned_text
             })
 
-        # Cas BDD vide pour cet utilisateur
-        if not data:
-            return pd.DataFrame(columns=['resume_name', 'resume'])
-
-        return pd.DataFrame(data)
+        return data if data else []
 
     except SQLAlchemyError as e:
         logger.error(f"Erreur de lecture des résumés pour l'utilisateur {user_id} : {e}")
-        return pd.DataFrame(columns=['resume_name', 'resume'])
+        return []
 
     finally:
         db.close()

@@ -182,13 +182,10 @@ def get_resume_by_user_id(user_id: int):
         user_id (int): ID de l'utilisateur.
 
     Returns:
-        dict: Statut de succès, liste des résumés ou message d'erreur.
+        dict: Statut de succès et liste des résumés.
     """
     try:
-        df = read_resume_by_user_id(user_id)
-
-        # Conversion du DataFrame en liste de dictionnaires
-        resumes_list = df.to_dict(orient='records')
+        resumes_list = read_resume_by_user_id(user_id)
         print(f"RESUME {resumes_list}")
 
         return {

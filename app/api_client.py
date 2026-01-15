@@ -143,7 +143,8 @@ class FastAPIClient:
                 return f"❌ Erreur lors de la sauvegarde du résumé '{resume_name}'."
 
         # ---- FETCH READ RESUME ----
-        def fetch_read_resume(self, user: str) -> pd.DataFrame:
+        def fetch_read_resume(self, user: str) -> list:
+            """Récupère les résumés d'un utilisateur et renvoie une liste de dictionnaires."""
             try:
                 response = requests.get(
                     f"{self.base_url}/get_resume/{user['id']}",
@@ -151,13 +152,16 @@ class FastAPIClient:
                 )
                 response.raise_for_status()
                 data = response.json()
+
                 if data.get("success") and "resumes" in data:
-                    return pd.DataFrame(data.get("resumes", []))
-                return pd.DataFrame(columns=["id", "resume_name", "resume"])
+                    return data.get("resumes", [])
+
+                # Si aucun résumé, on renvoie une liste vide avec structure attendue
+                return []
 
             except requests.RequestException as e:
                 print(f"[USER FETCH RESUME] {e}")
-                return pd.DataFrame()
+                return []
 
         # ---- DELETE RESUME ----
         def delete_resume(self, resume_id: int) -> bool:
