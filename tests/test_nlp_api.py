@@ -1,9 +1,9 @@
-# tests/test_ocr_api.py
+# tests/test_nlp_api.py
 
 import io
 import pytest
 from fastapi.testclient import TestClient
-from apis.ia_api.ocr_api import app
+from apis.ia_api.nlp_api import app
 import sys
 sys.path.insert(0, '..') # si besoin pour import services
 from unittest.mock import MagicMock, patch

@@ -1,4 +1,4 @@
-# apis/ia_api/ocr_api.py
+# apis/ia_api/nlp_api.py
 
 """
 Module OCR API

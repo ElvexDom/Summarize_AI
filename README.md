@@ -176,7 +176,7 @@ python -m apis.ia_api.ocr_api
 ## 3️⃣ Lancer l’API Data (historique + utilisateurs) séparément
 
 ```bash
-python -m apis.data_api.data_api
+python -m apis.data_api.core_api
 ```
 
 📌 Utile pour :
@@ -230,13 +230,13 @@ python -m app
 ### 🔵 Lancer l’IA seule
 
 ```bash
-python -m apis.ia_api.ocr_api
+python -m apis.ia_api.nlp_api
 ```
 
 ### 🟡 Lancer la Data API seule
 
 ```bash
-python -m apis.data_api.data_api
+python -m apis.data_api.core_api
 ```
 
 ---
