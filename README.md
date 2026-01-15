@@ -15,9 +15,11 @@ Ce projet est une application d’IA permettant :
 
 Elle s’appuie sur les librairies :
 
-- **pytesseract** pour la reconnaissance de caractères,
+- **paddleOCR** pour la reconnaissance de caractères,
     
-- **Hugging Face Transformers** pour le résumé automatique & la NER,
+- **Hugging Face Transformers** pour la NER,
+  
+- **Groq** pour le résumé automatique avec llama
     
 - **Pillow** pour la manipulation des images,
     
@@ -89,6 +91,7 @@ pip install transformers
 pip install gradio
 pip install loguru
 pip install bcrypt
+pip install groq
 ```
 ---
 
@@ -106,11 +109,11 @@ Summarize_AI/
 │
 │   ├── ia_api/                    # API Intelligence Artificielle
 │   │   ├── __init__.py
-│   │   └── ocr_api.py             # OCR + résumé + NER
+│   │   └── nlp_api.py             # OCR + résumé + NER
 │
 │   └── data_api/                  # API de gestion des données
 │       ├── __init__.py
-│       └── data_api.py            # Stockage utilisateurs & historiques
+│       └── core_api.py            # Stockage utilisateurs & historiques
 │
 ├── services/                      # Logique NLP (HuggingFace)
 │   ├── __init__.py
@@ -125,7 +128,8 @@ Summarize_AI/
 │   └── database.py
 │
 ├── tests/                         # Tests unitaires et validation
-│   ├── test_ocr_api.py
+│   ├── test_nlp_api.py
+|   ├── test_log_watcher.py
 │   └── test_data_api.py
 │
 ├── requirements.txt
@@ -197,15 +201,15 @@ python -m apis.data_api.core_api
                       │
                       ▼
              ┌─────────────────┐
-             │      OCR API     │
-             │ (OCR + NLP + NER)│
+             │      Nlp API     │
+             │ (OCR + LLM + NER)│
              └─────────────────┘
                       │
         texte brut/sollicitation NLP
                       │
                       ▼
              ┌─────────────────┐
-             │     Data API     │
+             │     Core API     │
              │ (users + history)│
              └─────────────────┘
                       │
@@ -255,6 +259,6 @@ python -m apis.data_api.core_api
 # 🌟 Exemple d’imports depuis `app/__main__.py`
 
 ```python
-from apis.ia_api.ocr_api import run_ocr, run_summarization, run_ner
-from apis.data_api.data_api import save_history, list_documents
+from apis.ia_api.nlp_api import run_ocr, run_summarization, run_ner
+from apis.data_api.core_api import save_history, list_documents
 ```
