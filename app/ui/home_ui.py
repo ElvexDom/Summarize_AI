@@ -28,8 +28,16 @@ class HomeUI:
                 with gr.Tab("📄 Générer"):
                     self.pipeline = PipelineUI(self.user_api, self.pipeline_api, self.user)
 
-                with gr.Tab("🔍 Rechercher", id="resume_tab"):
+                with gr.Tab("🔍 Rechercher", id="resume_tab") as resume_tab:
                     self.resume = ResumeUI(self.user_api, self.user)
+                    
+                    # ⚡ Rafraîchir la table quand l'onglet “Rechercher” devient actif
+                    resume_tab.select(
+                        fn=self.resume.refresh_table,
+                        inputs=[self.user],
+                        outputs=[self.resume.data_table],
+                        show_progress=False
+                    )
 
     # ---- Affichage / Masquage ----
     def show(self) -> gr.update:

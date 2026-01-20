@@ -156,7 +156,7 @@ async def resume_text(request: TextRequest):
 if __name__ == "__main__":
     # Lancement du serveur pour le développement
     uvicorn.run(
-        "apis.ia_api.ocr_api:app",  # Chemin vers le module de l'application
+        "apis.ia_api.nlp_api:app",  # Chemin vers le module de l'application
         host="127.0.0.1",
         port=8002,
         reload=False  # Recharge automatique pour le dev, à désactiver en prod

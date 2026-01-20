@@ -31,7 +31,7 @@ class GradioUI:
     def _build(self):
         """Construit l'interface Gradio complète avec AuthUI et HomeUI."""
         try:
-            with gr.Blocks(title="Summarize AI") as self.ui:
+            with gr.Blocks(title="Summarize AI", css="footer {display: none !important;}") as self.ui:
 
                 # Header principal
                 gr.Markdown("<center><h1><b>📄 Extraction & Résumé</b></h1></center>")
@@ -42,6 +42,9 @@ class GradioUI:
                 # HomeUI : construit automatiquement
                 self.home = HomeUI(self.user_api, self.pipeline_api, self.auth.user)
 
+                # ---- FOOTER personnalisé ----
+                gr.Markdown("© 2026 SIDORA AI – Tous droits réservés")
+
                 LogWatcher.log("info", "Composants AuthUI et HomeUI construits.", screen=True)
 
                 # ---- Callbacks ----
@@ -51,8 +54,7 @@ class GradioUI:
                     outputs=[
                         self.auth.ui,
                         self.home.ui,
-                        self.home.welcome,
-                        self.home.resume.data_table
+                        self.home.welcome
                     ]
                 )
 
@@ -71,14 +73,10 @@ class GradioUI:
         if connected:
             LogWatcher.log("info", f"Utilisateur '{user['pseudo']}' connecté.", screen=True)
 
-            # 🌸 Mettre à jour le tableau des résumés automatiquement
-            updated_table = self.home.resume.refresh_table(user)
-
             return (
                 self.auth.hide(),
                 self.home.show(),
-                f"### 👤 Bonjour, {user['pseudo']} !",
-                updated_table
+                f"### 👤 Bonjour, {user['pseudo']} !"
             )
         else:
             LogWatcher.log("info", "Utilisateur déconnecté.", screen=True)
@@ -86,5 +84,4 @@ class GradioUI:
                 self.auth.show(),
                 self.home.hide(),
                 "",
-                []
             )
