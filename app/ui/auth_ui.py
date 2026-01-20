@@ -34,6 +34,11 @@ class AuthUI:
                     self.btn_register = gr.Button("✅ Créer le compte", variant="primary")
                     self.register_status = gr.Markdown("")
 
+            gr.HTML("""
+                <button onclick="window.location.search='?__theme=dark'">🌙 Dark</button>
+                <button onclick="window.location.search='?__theme=light'">☀️ Light</button>
+                """)
+
         # ---- Events ----
         self.btn_login.click(
             self.login,
